@@ -1,4 +1,5 @@
 import pandas as pd
+import json
 from .models import ImageReport
 
 
@@ -14,3 +15,11 @@ def export_csv(reports: list[ImageReport], path: str) -> None:
         data.append(report.model_dump())
     df = pd.DataFrame(data)
     df.to_csv(path, index=False)
+
+def export_json(reports: list[ImageReport], path: str) -> None :
+    data = []
+    for report in reports:
+        data.append(report.model_dump())
+    with open(path, 'w') as file:
+        json.dump(data, file, indent=4)
+
