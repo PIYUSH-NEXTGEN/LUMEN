@@ -3,7 +3,7 @@ import os
 from image_analyzer.stats import image_stats, channel_stats
 from image_analyzer.histogram import histogram
 from image_analyzer.loader import load_image
-from image_analyzer.report import find_brightest_darkest
+from image_analyzer.report import find_brightest_darkest, export_csv, export_json
 from image_analyzer.models import ImageReport, HistogramStats
 
 folder_path = "images"
@@ -44,6 +44,26 @@ for image in image_files:
     )
 
     reports.append(report)
+
+brightest, darkest = find_brightest_darkest(reports)
+
+print("-" * 50)
+print(
+    f"Brightest Image: {brightest.filename} "
+    f"(Brightness: {brightest.mean_brightness:.2f})"
+)
+print(
+    f"Darkest Image: {darkest.filename} "
+    f"(Brightness: {darkest.mean_brightness:.2f})\n"
+)
+
+export_csv(reports, "image_results.csv")
+print("| Results saved to 'image_results.csv' |")
+
+export_json(reports, "image_results.json")
+print("| Results saved to 'image_results.json' |\n")
+
+
 for report in reports:
     print(f"Filename: {report.filename}")
     print(f"Brightness: {report.mean_brightness:.2f}")
