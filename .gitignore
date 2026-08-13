@@ -1,1 +1,11 @@
 .idea/
+# Python cache
+__pycache__/
+*.pyc
+
+# Generated analysis results
+image_results.csv
+image_results.json
+
+# Local test images
+images/
