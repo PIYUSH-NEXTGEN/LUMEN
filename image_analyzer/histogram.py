@@ -1,18 +1,18 @@
 import numpy as np
-
+from config import HISTOGRAM_BINS, DARK_THRESHOLD, BRIGHT_THRESHOLD
 from .models import RegionHistogram
 
 
 def histogram(channel: np.ndarray) -> RegionHistogram:
     hist, _ = np.histogram(
         channel,
-        bins=256,
+        bins=HISTOGRAM_BINS,
         range=(0, 256),
     )
 
-    dark = hist[0:85].sum()
-    mid = hist[85:170].sum()
-    bright = hist[170:256].sum()
+    dark =    hist[0:DARK_THRESHOLD].sum()
+    mid =    hist[DARK_THRESHOLD:BRIGHT_THRESHOLD].sum()
+    bright = hist[BRIGHT_THRESHOLD:HISTOGRAM_BINS].sum()
 
     total = channel.size
 

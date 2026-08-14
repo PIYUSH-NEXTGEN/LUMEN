@@ -6,12 +6,13 @@ from image_analyzer.histogram import histogram
 from image_analyzer.loader import load_image
 from image_analyzer.models import ImageReport, HistogramStats
 from image_analyzer.report import ( find_brightest_darkest,export_csv,export_json,)
+from config import IMAGE_FOLDER, CSV_OUTPUT, JSON_OUTPUT
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-folder_path = "images"
+folder_path = IMAGE_FOLDER
 
 image_files = []
 
@@ -75,8 +76,8 @@ if reports:
         f"(Brightness: {darkest.mean_brightness:.2f})"
     )
 
-    export_csv(reports, "image_results.csv")
-    export_json(reports, "image_results.json")
+    export_csv(reports, CSV_OUTPUT)
+    export_json(reports, JSON_OUTPUT)
 
     logger.info("Results saved to image_results.csv")
     logger.info("Results saved to image_results.json")

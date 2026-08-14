@@ -1,0 +1,6 @@
+HISTOGRAM_BINS = 256
+DARK_THRESHOLD = 85
+BRIGHT_THRESHOLD = 170
+IMAGE_FOLDER = "images"
+CSV_OUTPUT = "image_results.csv"
+JSON_OUTPUT = "image_results.json"
