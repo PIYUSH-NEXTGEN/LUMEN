@@ -9,3 +9,6 @@ image_results.json
 
 # Local test images
 images/
+
+*.csv
+*.egg-info/
