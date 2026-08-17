@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 from image_analyzer.stats import image_stats
 from image_analyzer.histogram import histogram
+from image_analyzer.brightness import luminance_brightness
 
 test_array = np.array(
     [[[0, 0, 0], [255, 255, 255]]],
@@ -26,3 +27,14 @@ def test_image_stats():
     assert stats.maximum == 255
     assert stats.mean == pytest.approx(127.5)
     assert stats.std == pytest.approx(127.5)
+
+
+def test_luminance_brightness():
+    arr = np.array(
+        [[[255, 0, 0]]],
+        dtype=np.uint8
+    )
+
+    result = luminance_brightness(arr)
+
+    assert result == pytest.approx(0.299 * 255)

@@ -36,3 +36,4 @@ class ImageReport(BaseModel):
     channel_stats: ChannelStats
     histogram: HistogramStats
     mean_brightness : float
+    luminance_brightness: float

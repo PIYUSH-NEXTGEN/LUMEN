@@ -7,7 +7,7 @@ from image_analyzer.histogram import histogram
 from image_analyzer.loader import load_image
 from image_analyzer.models import ImageReport, HistogramStats
 from image_analyzer.report import find_brightest_darkest, export_csv, export_json
-
+from image_analyzer.brightness import luminance_brightness
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -59,6 +59,7 @@ def analyze(
             )
 
             mean_brightness = float(arr.mean())
+            perceptual_brightness = luminance_brightness(arr)
 
             report = ImageReport(
                 filename=image,
@@ -66,6 +67,7 @@ def analyze(
                 channel_stats=ch_stats,
                 histogram=hist,
                 mean_brightness=mean_brightness,
+                luminance_brightness=perceptual_brightness,
             )
 
             reports.append(report)
