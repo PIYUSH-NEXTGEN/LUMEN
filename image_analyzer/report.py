@@ -46,6 +46,7 @@ def export_csv(reports: list[ImageReport], path: str) -> None:
             "colorfulness_score": round(report.colorfulness_score, 2),
             "underexposed_pct": round(report.underexposed_pct, 2),
             "overexposed_pct": round(report.overexposed_pct, 2),
+            "entropy_score": round(report.entropy_score, 2),
         })
 
     df = pd.DataFrame(data)

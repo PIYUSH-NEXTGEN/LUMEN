@@ -7,9 +7,9 @@ from image_analyzer.histogram import histogram
 from image_analyzer.loader import load_image
 from image_analyzer.models import ImageReport, HistogramStats
 from image_analyzer.report import find_brightest_darkest, export_csv, export_json
-from image_analyzer.brightness import (luminance_brightness, contrast_score,
-                                       sharpness_score, colorfulness_score,
-                                        exposure_stats,)
+from image_analyzer.image_quality import (luminance_brightness, contrast_score,
+                                          sharpness_score, colorfulness_score,
+                                          exposure_stats, entropy_score )
 
 
 logging.basicConfig(level=logging.INFO)
@@ -66,6 +66,7 @@ def analyze(
             sharpness = sharpness_score(arr)
             colorfulness = colorfulness_score(arr)
             underexposed, overexposed = exposure_stats(arr)
+            entropy = entropy_score(arr)
 
             report = ImageReport(
                 filename=image,
@@ -79,6 +80,7 @@ def analyze(
                 colorfulness_score=colorfulness,
                 underexposed_pct=underexposed,
                 overexposed_pct=overexposed,
+                entropy_score=entropy,
             )
 
             reports.append(report)

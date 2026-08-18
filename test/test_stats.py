@@ -2,8 +2,9 @@ import numpy as np
 import pytest
 from image_analyzer.stats import image_stats
 from image_analyzer.histogram import histogram
-from image_analyzer.brightness import (luminance_brightness, contrast_score,
-                                       sharpness_score, colorfulness_score, exposure_stats,)
+from image_analyzer.image_quality import (luminance_brightness, contrast_score,
+                                          sharpness_score, colorfulness_score,
+                                          exposure_stats, entropy_score)
 
 test_array = np.array(
     [[[0, 0, 0], [255, 255, 255]]],
@@ -63,3 +64,8 @@ def test_exposure_stats():
     underexposed, overexposed = exposure_stats(image)
     assert underexposed == 100
     assert overexposed == 0
+
+def test_entropy_score():
+    image = np.zeros((10, 10, 3), dtype=np.uint8)
+    score = entropy_score(image)
+    assert score == 0

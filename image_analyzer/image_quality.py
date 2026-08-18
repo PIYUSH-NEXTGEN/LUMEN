@@ -65,3 +65,15 @@ def exposure_stats(arr: np.ndarray) -> tuple[float, float]:
     underexposed = (luminance < 20).mean() * 100
     overexposed = (luminance > 235).mean() * 100
     return float(underexposed), float(overexposed)
+
+
+def entropy_score(arr: np.ndarray) -> float:
+    histogram, _ = np.histogram(arr, bins=256, range=(0, 256))
+
+    probabilities = histogram / histogram.sum()
+    probabilities = probabilities[probabilities > 0]
+
+    entropy = -np.sum(
+        probabilities * np.log2(probabilities)
+    )
+    return float(entropy)

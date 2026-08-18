@@ -42,3 +42,4 @@ class ImageReport(BaseModel):
     colorfulness_score: float
     underexposed_pct: float
     overexposed_pct: float
+    entropy_score: float
