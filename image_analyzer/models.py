@@ -37,3 +37,4 @@ class ImageReport(BaseModel):
     histogram: HistogramStats
     mean_brightness : float
     luminance_brightness: float
+    contrast_score: float

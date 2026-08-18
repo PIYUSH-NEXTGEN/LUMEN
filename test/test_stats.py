@@ -3,6 +3,7 @@ import pytest
 from image_analyzer.stats import image_stats
 from image_analyzer.histogram import histogram
 from image_analyzer.brightness import luminance_brightness
+from image_analyzer.brightness import contrast_score
 
 test_array = np.array(
     [[[0, 0, 0], [255, 255, 255]]],
@@ -34,7 +35,13 @@ def test_luminance_brightness():
         [[[255, 0, 0]]],
         dtype=np.uint8
     )
-
     result = luminance_brightness(arr)
-
     assert result == pytest.approx(0.299 * 255)
+
+def test_contrast_score():
+    arr = np.array(
+        [[[0, 0, 0], [255, 255, 255]]],
+        dtype=np.uint8
+    )
+    result = contrast_score(arr)
+    assert result == pytest.approx(127.5)
