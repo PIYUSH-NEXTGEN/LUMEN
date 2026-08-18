@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from image_analyzer.stats import image_stats
 from image_analyzer.histogram import histogram
-from image_analyzer.brightness import luminance_brightness, contrast_score,sharpness_score
+from image_analyzer.brightness import luminance_brightness, contrast_score,sharpness_score,colorfulness_score
 
 test_array = np.array(
     [[[0, 0, 0], [255, 255, 255]]],
@@ -50,3 +50,9 @@ def test_sharpness_score():
     image[4:6, :] = 255
     score = sharpness_score(image)
     assert score > 0
+
+def test_colorfulness_score():
+    image = np.zeros((10, 10, 3), dtype=np.uint8)
+    image[:, :, 0] = 255
+    score = colorfulness_score(image)
+    assert score == 255

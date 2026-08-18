@@ -43,6 +43,7 @@ def export_csv(reports: list[ImageReport], path: str) -> None:
             "luminance_brightness": round(report.luminance_brightness, 2),
             "contrast_score": round(report.contrast_score, 2),
             "sharpness_score": round(report.sharpness_score, 2),
+            "colorfulness_score": round(report.colorfulness_score, 2),
         })
 
     df = pd.DataFrame(data)

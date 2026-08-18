@@ -35,7 +35,6 @@ def sharpness_score(arr: np.ndarray) -> float:
         + 0.587 * green
         + 0.114 * blue
     )
-
     center = luminance[1:-1, 1:-1]
     top = luminance[:-2, 1:-1]
     bottom = luminance[2:, 1:-1]
@@ -47,3 +46,10 @@ def sharpness_score(arr: np.ndarray) -> float:
     )
 
     return float(laplacian.var())
+
+def colorfulness_score(arr: np.ndarray) -> float:
+    maximum = arr.max(axis=2)
+    minimum = arr.min(axis=2)
+
+    color_difference = maximum - minimum
+    return float(color_difference.mean())

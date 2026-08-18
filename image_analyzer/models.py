@@ -39,3 +39,4 @@ class ImageReport(BaseModel):
     luminance_brightness: float
     contrast_score: float
     sharpness_score: float
+    colorfulness_score: float
