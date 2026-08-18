@@ -2,8 +2,7 @@ import numpy as np
 import pytest
 from image_analyzer.stats import image_stats
 from image_analyzer.histogram import histogram
-from image_analyzer.brightness import luminance_brightness
-from image_analyzer.brightness import contrast_score
+from image_analyzer.brightness import luminance_brightness, contrast_score,sharpness_score
 
 test_array = np.array(
     [[[0, 0, 0], [255, 255, 255]]],
@@ -45,3 +44,9 @@ def test_contrast_score():
     )
     result = contrast_score(arr)
     assert result == pytest.approx(127.5)
+
+def test_sharpness_score():
+    image = np.zeros((10, 10, 3), dtype=np.uint8)
+    image[4:6, :] = 255
+    score = sharpness_score(image)
+    assert score > 0
