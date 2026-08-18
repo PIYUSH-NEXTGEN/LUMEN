@@ -4,7 +4,7 @@ from image_analyzer.stats import image_stats
 from image_analyzer.histogram import histogram
 from image_analyzer.image_quality import (luminance_brightness, contrast_score,
                                           sharpness_score, colorfulness_score,
-                                          exposure_stats, entropy_score)
+                                          exposure_stats, entropy_score, dominant_colors)
 
 test_array = np.array(
     [[[0, 0, 0], [255, 255, 255]]],
@@ -69,3 +69,18 @@ def test_entropy_score():
     image = np.zeros((10, 10, 3), dtype=np.uint8)
     score = entropy_score(image)
     assert score == 0
+
+def test_dominant_colors():
+    arr = np.array(
+        [
+            [[255, 255, 255], [255, 255, 255]],
+            [[0, 0, 0], [0, 0, 0]],
+        ],
+        dtype=np.uint8,
+    )
+
+    result = dominant_colors(arr, k=2)
+    colors = {item.color: item.percentage for item in result}
+
+    assert colors["white"] == 50.0
+    assert colors["black"] == 50.0

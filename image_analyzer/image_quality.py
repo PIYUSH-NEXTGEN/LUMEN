@@ -104,10 +104,12 @@ def get_color_name(rgb: tuple[int, int, int]) -> str:
 
     return "other"
 
-def dominant_colors( arr: np.ndarray, k: int = 5, ) -> list[DominantColor]:
+def dominant_colors(
+    arr: np.ndarray,
+    k: int = 5,
+) -> list[DominantColor]:
 
     pixels = arr.reshape(-1, 3)
-
     quantized = (pixels // 32) * 32
 
     colors, counts = np.unique(
@@ -116,28 +118,47 @@ def dominant_colors( arr: np.ndarray, k: int = 5, ) -> list[DominantColor]:
         return_counts=True,
     )
 
-    indices = np.argsort(counts)[::-1][:k]
+    color_groups: dict[str, list[tuple[tuple[int, int, int], int]]] = {}
 
-    return [
-        DominantColor(
-            color=get_color_name(
-                (
-                    int(colors[index][0]),
-                    int(colors[index][1]),
-                    int(colors[index][2]),
-                )
-            ),
-            rgb=(
-                int(colors[index][0]),
-                int(colors[index][1]),
-                int(colors[index][2]),
-            ),
-            percentage=float(
-                round(
-                    (int(counts[index]) / len(pixels)) * 100,
-                    2,
-                )
-            ),
+    for color, count in zip(colors, counts):
+        rgb = (
+            int(color[0]),
+            int(color[1]),
+            int(color[2]),
         )
-        for index in indices
-    ]
+
+        name = get_color_name(rgb)
+
+        color_groups.setdefault(name, []).append(
+            (rgb, int(count))
+        )
+
+    total_pixels = len(pixels)
+
+    results = []
+
+    for name, group in color_groups.items():
+        total_count = sum(count for _, count in group)
+
+        representative_rgb = max(
+            group,
+            key=lambda item: item[1],
+        )[0]
+
+        results.append(
+            DominantColor(
+                color=name,
+                rgb=representative_rgb,
+                percentage=round(
+                    (total_count / total_pixels) * 100,
+                    2,
+                ),
+            )
+        )
+
+    results.sort(
+        key=lambda item: item.percentage,
+        reverse=True,
+    )
+
+    return results[:k]
