@@ -30,6 +30,12 @@ class HistogramStats(BaseModel):
     green: RegionHistogram
     blue: RegionHistogram
 
+class DominantColor(BaseModel):
+    color: str
+    rgb: tuple[int, int, int]
+    percentage: float
+
+
 class ImageReport(BaseModel):
     filename : str
     image_stats: ImageStats
@@ -43,3 +49,4 @@ class ImageReport(BaseModel):
     underexposed_pct: float
     overexposed_pct: float
     entropy_score: float
+    dominant_colors: list[DominantColor]
