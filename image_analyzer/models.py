@@ -40,3 +40,5 @@ class ImageReport(BaseModel):
     contrast_score: float
     sharpness_score: float
     colorfulness_score: float
+    underexposed_pct: float
+    overexposed_pct: float

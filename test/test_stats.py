@@ -2,7 +2,8 @@ import numpy as np
 import pytest
 from image_analyzer.stats import image_stats
 from image_analyzer.histogram import histogram
-from image_analyzer.brightness import luminance_brightness, contrast_score,sharpness_score,colorfulness_score
+from image_analyzer.brightness import (luminance_brightness, contrast_score,
+                                       sharpness_score, colorfulness_score, exposure_stats,)
 
 test_array = np.array(
     [[[0, 0, 0], [255, 255, 255]]],
@@ -56,3 +57,9 @@ def test_colorfulness_score():
     image[:, :, 0] = 255
     score = colorfulness_score(image)
     assert score == 255
+
+def test_exposure_stats():
+    image = np.zeros((10, 10, 3), dtype=np.uint8)
+    underexposed, overexposed = exposure_stats(image)
+    assert underexposed == 100
+    assert overexposed == 0
