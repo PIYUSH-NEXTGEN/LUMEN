@@ -126,7 +126,6 @@ def dominant_colors(
             int(color[1]),
             int(color[2]),
         )
-
         name = get_color_name(rgb)
 
         color_groups.setdefault(name, []).append(
@@ -134,7 +133,6 @@ def dominant_colors(
         )
 
     total_pixels = len(pixels)
-
     results = []
 
     for name, group in color_groups.items():
@@ -160,5 +158,4 @@ def dominant_colors(
         key=lambda item: item.percentage,
         reverse=True,
     )
-
     return results[:k]
