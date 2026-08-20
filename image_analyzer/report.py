@@ -1,6 +1,6 @@
 import pandas as pd
 import json
-from .models import ImageReport, DuplicateGroup
+from .models import ImageReport, DuplicateGroup, AnalysisResult
 
 
 def find_brightest_darkest(reports: list[ImageReport]) -> tuple[ImageReport, ImageReport]:
@@ -59,10 +59,7 @@ def export_csv(reports: list[ImageReport], path: str) -> None:
     df = pd.DataFrame(data)
     df.to_csv(path, index=False)
 
-def export_json(reports: list[ImageReport], path: str) -> None :
-    data = []
-    for report in reports:
-        data.append(report.model_dump())
-    with open(path, 'w') as file:
-        json.dump(data, file, indent=4)
+def export_json(result: AnalysisResult, path: str) -> None:
+    with open(path, "w") as file:
+        json.dump(result.model_dump(), file, indent=4)
 

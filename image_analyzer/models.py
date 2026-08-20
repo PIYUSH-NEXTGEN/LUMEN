@@ -54,3 +54,7 @@ class ImageReport(BaseModel):
     overexposed_pct: float
     entropy_score: float
     dominant_colors: list[DominantColor]
+
+class AnalysisResult(BaseModel):
+    reports: list[ImageReport]
+    duplicates: list[DuplicateGroup]

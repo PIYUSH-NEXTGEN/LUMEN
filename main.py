@@ -5,7 +5,7 @@ import typer
 from image_analyzer.stats import image_stats, channel_stats
 from image_analyzer.histogram import histogram
 from image_analyzer.loader import load_image
-from image_analyzer.models import ImageReport, HistogramStats
+from image_analyzer.models import ImageReport, HistogramStats, AnalysisResult
 from image_analyzer.report import find_brightest_darkest, export_csv, export_json,duplicate_summary
 from image_analyzer.duplicate import find_duplicates
 from image_analyzer.image_quality import (luminance_brightness, contrast_score,
@@ -91,7 +91,7 @@ def analyze(
 
             reports.append(report)
 
-            logger.info("Successfully analyzed: %s", image)
+            logger.info("Successfully analyzed: %s \n", image)
 
         except FileNotFoundError:
             logger.error("File not found: %s", image)
@@ -109,12 +109,17 @@ def analyze(
         for group in duplicates:
             logger.info("Duplicate group:")
             for file in group.files:
-                logger.info("  %s", file)
+                logger.info("  %s\n", file)
 
         brightest, darkest = find_brightest_darkest(reports)
 
+        result = AnalysisResult(
+            reports=reports,
+            duplicates=duplicates,
+        )
+
         export_csv(reports, output)
-        export_json(reports, "image_results.json")
+        export_json(result, "image_results.json")
 
         logger.info("Results saved to %s", output)
         logger.info("Results saved to image_results.json")
