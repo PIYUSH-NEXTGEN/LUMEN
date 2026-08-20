@@ -1,6 +1,6 @@
 import pandas as pd
 import json
-from .models import ImageReport
+from .models import ImageReport, DuplicateGroup
 
 
 def find_brightest_darkest(reports: list[ImageReport]) -> tuple[ImageReport, ImageReport]:
@@ -8,6 +8,13 @@ def find_brightest_darkest(reports: list[ImageReport]) -> tuple[ImageReport, Ima
     darkest = min(reports, key=lambda report: report.mean_brightness)
     return brightest, darkest
 
+def duplicate_summary(
+    duplicates: list[DuplicateGroup],
+) -> dict[str, int]:
+    return {
+        "duplicate_groups": len(duplicates),
+        "duplicate_files": sum(len(group.files) for group in duplicates),
+    }
 
 def export_csv(reports: list[ImageReport], path: str) -> None:
     data = []

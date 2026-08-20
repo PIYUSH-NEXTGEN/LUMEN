@@ -6,7 +6,8 @@ from image_analyzer.stats import image_stats, channel_stats
 from image_analyzer.histogram import histogram
 from image_analyzer.loader import load_image
 from image_analyzer.models import ImageReport, HistogramStats
-from image_analyzer.report import find_brightest_darkest, export_csv, export_json
+from image_analyzer.report import find_brightest_darkest, export_csv, export_json,duplicate_summary
+from image_analyzer.duplicate import find_duplicates
 from image_analyzer.image_quality import (luminance_brightness, contrast_score,
                                           sharpness_score, colorfulness_score,
                                           exposure_stats, entropy_score , dominant_colors)
@@ -37,6 +38,9 @@ def analyze(
     for file in os.listdir(folder):
         if file.lower().endswith((".png", ".jpg", ".jpeg", ".bmp", ".gif")):
             image_files.append(os.path.join(folder, file))
+
+    duplicates = find_duplicates(image_files)
+    duplicate_info = duplicate_summary(duplicates)
 
     reports = []
 
@@ -96,6 +100,17 @@ def analyze(
             logger.error("Failed to analyze %s: %s", image, error)
 
     if reports:
+        logger.info(
+            "Duplicate groups: %d, duplicate files: %d",
+            duplicate_info["duplicate_groups"],
+            duplicate_info["duplicate_files"],
+        )
+
+        for group in duplicates:
+            logger.info("Duplicate group:")
+            for file in group.files:
+                logger.info("  %s", file)
+
         brightest, darkest = find_brightest_darkest(reports)
 
         export_csv(reports, output)

@@ -5,6 +5,7 @@ from image_analyzer.histogram import histogram
 from image_analyzer.image_quality import (luminance_brightness, contrast_score,
                                           sharpness_score, colorfulness_score,
                                           exposure_stats, entropy_score, dominant_colors)
+from image_analyzer.duplicate import image_hash, find_duplicates
 
 test_array = np.array(
     [[[0, 0, 0], [255, 255, 255]]],
@@ -84,3 +85,41 @@ def test_dominant_colors():
 
     assert colors["white"] == 50.0
     assert colors["black"] == 50.0
+
+
+
+def test_image_hash_is_consistent(tmp_path):
+    image = tmp_path / "image.txt"
+    different_image = tmp_path / "different.txt"
+
+    image.write_bytes(b"hello")
+    different_image.write_bytes(b"world")
+
+    first = image_hash(str(image))
+    second = image_hash(str(image))
+    different = image_hash(str(different_image))
+
+    assert first == second
+    assert first != different
+    assert len(first) == 64
+
+def test_find_duplicates(tmp_path):
+    image1 = tmp_path / "image1.jpg"
+    image2 = tmp_path / "image2.jpg"
+    image3 = tmp_path / "image3.jpg"
+
+    image1.write_bytes(b"same image")
+    image2.write_bytes(b"same image")
+    image3.write_bytes(b"different image")
+
+    duplicates = find_duplicates([
+        str(image1),
+        str(image2),
+        str(image3),
+    ])
+
+    assert len(duplicates) == 1
+    assert set(duplicates[0].files) == {
+        str(image1),
+        str(image2),
+    }

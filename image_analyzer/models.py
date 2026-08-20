@@ -35,6 +35,10 @@ class DominantColor(BaseModel):
     rgb: tuple[int, int, int]
     percentage: float
 
+class DuplicateGroup(BaseModel):
+    hash: str
+    files: list[str]
+
 
 class ImageReport(BaseModel):
     filename : str
