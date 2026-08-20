@@ -54,6 +54,11 @@ def export_csv(reports: list[ImageReport], path: str) -> None:
             "underexposed_pct": round(report.underexposed_pct, 2),
             "overexposed_pct": round(report.overexposed_pct, 2),
             "entropy_score": round(report.entropy_score, 2),
+            "dominant_colors": ", ".join(
+                f"{color.color} ({round(color.percentage, 2)}%)"
+                for color in report.dominant_colors
+            ),
+
         })
 
     df = pd.DataFrame(data)
