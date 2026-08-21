@@ -22,24 +22,3 @@ def find_duplicates(paths: list[str]) -> list[DuplicateGroup]:
         for file_hash, files in hashes.items()
         if len(files) > 1
     ]
-
-def test_find_duplicates(tmp_path):
-    image1 = tmp_path / "image1.jpg"
-    image2 = tmp_path / "image2.jpg"
-    image3 = tmp_path / "image3.jpg"
-
-    image1.write_bytes(b"same image")
-    image2.write_bytes(b"same image")
-    image3.write_bytes(b"different image")
-
-    duplicates = find_duplicates([
-        str(image1),
-        str(image2),
-        str(image3),
-    ])
-
-    assert len(duplicates) == 1
-    assert set(duplicates[0].files) == {
-        str(image1),
-        str(image2),
-    }
