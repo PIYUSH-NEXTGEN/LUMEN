@@ -33,6 +33,10 @@ def analyze(
     else:
         logger.setLevel(logging.INFO)
 
+    if not os.path.isdir(folder):
+        logger.error("Folder does not exist or is not a directory: %s", folder)
+        raise typer.Exit(code=1)
+
     image_files = []
 
     for file in os.listdir(folder):
