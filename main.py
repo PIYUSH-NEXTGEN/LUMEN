@@ -11,7 +11,8 @@ from image_analyzer.report import find_brightest_darkest, export_csv, export_jso
 from image_analyzer.duplicate import find_duplicates
 from image_analyzer.image_quality import (luminance_brightness, contrast_score,
                                           sharpness_score, colorfulness_score,
-                                          exposure_stats, entropy_score , dominant_colors)
+                                          exposure_stats, entropy_score ,
+                                          dominant_colors, compute_luminance)
 
 
 logging.basicConfig(level=logging.INFO)
@@ -80,11 +81,12 @@ def analyze(
             )
 
             mean_brightness = float(arr.mean())
-            perceptual_brightness = luminance_brightness(arr)
-            contrast = contrast_score(arr)
-            sharpness = sharpness_score(arr)
+            luminance = compute_luminance(arr)
+            perceptual_brightness = luminance_brightness(luminance)
+            contrast = contrast_score(luminance)
+            sharpness = sharpness_score(luminance)
             colorfulness = colorfulness_score(arr)
-            underexposed, overexposed = exposure_stats(arr)
+            underexposed, overexposed = exposure_stats(luminance)
             entropy = entropy_score(arr)
             dominant = dominant_colors(arr)
 
