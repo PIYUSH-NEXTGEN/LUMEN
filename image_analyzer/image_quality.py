@@ -41,7 +41,7 @@ def entropy_score(arr: np.ndarray) -> float:
     entropy = -np.sum(
         probabilities * np.log2(probabilities)
     )
-    return float(entropy)
+    return float(entropy) + 0.0
 
 def get_color_name(rgb: tuple[int, int, int]) -> str:
     red, green, blue = rgb
