@@ -114,7 +114,7 @@ def analyze(
             logger.error("File not found: %s", image)
 
         except Exception as error:
-            logger.error("Failed to analyze %s: %s", image, error)
+            logger.exception("Failed to analyze %s: %s", image, error)
 
     if reports:
         logger.info(
