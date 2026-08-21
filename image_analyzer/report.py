@@ -8,20 +8,29 @@ def find_brightest_darkest(reports: list[ImageReport]) -> tuple[ImageReport, Ima
     darkest = min(reports, key=lambda report: report.mean_brightness)
     return brightest, darkest
 
-def duplicate_summary(
-    duplicates: list[DuplicateGroup],
-) -> dict[str, int]:
+def duplicate_summary(duplicates: list[DuplicateGroup],) -> dict[str, int]:
+    duplicate_images = sum(len(group.files) for group in duplicates)
+    redundant_images = sum(len(group.files) - 1 for group in duplicates)
+
     return {
         "duplicate_groups": len(duplicates),
-        "duplicate_files": sum(len(group.files) for group in duplicates),
+        "duplicate_images": duplicate_images,
+        "redundant_images": redundant_images,
     }
 
-def export_csv(reports: list[ImageReport], path: str) -> None:
+def export_csv(reports: list[ImageReport], duplicates: list[DuplicateGroup], path: str) -> None:
+    duplicate_lookup = {}
+
+    for group_id, group in enumerate(duplicates, start=1):
+        for file in group.files:
+            duplicate_lookup[file] = group_id
     data = []
 
     for report in reports:
         data.append({
             "filename": report.filename,
+            "duplicate": report.filename in duplicate_lookup,
+            "duplicate_group": duplicate_lookup.get(report.filename),
 
             "width": report.image_stats.shape[1],
             "height": report.image_stats.shape[0],

@@ -101,9 +101,10 @@ def analyze(
 
     if reports:
         logger.info(
-            "Duplicate groups: %d, duplicate files: %d",
+            "Duplicate groups: %d, duplicate images: %d, redundant images: %d",
             duplicate_info["duplicate_groups"],
-            duplicate_info["duplicate_files"],
+            duplicate_info["duplicate_images"],
+            duplicate_info["redundant_images"],
         )
 
         for group in duplicates:
@@ -118,7 +119,7 @@ def analyze(
             duplicates=duplicates,
         )
 
-        export_csv(reports, output)
+        export_csv(reports, duplicates, output)
         export_json(result, "image_results.json")
 
         logger.info("Results saved to %s", output)
