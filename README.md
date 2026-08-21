@@ -1,4 +1,4 @@
-# LUMEN
+# LUMEN version v.1
 
 LUMEN is a small command-line image analysis tool . It produces per-image metrics (brightness, contrast, sharpness, colorfulness, entropy, dominant colors), per-channel histograms, detects exact-file duplicates, and exports results as CSV and JSON.
 
