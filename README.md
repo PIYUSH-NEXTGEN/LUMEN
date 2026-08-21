@@ -1,11 +1,10 @@
 # LUMEN
 
-LUMEN is a small command-line image analysis tool intended for bulk inspection of image folders. It produces per-image metrics (brightness, contrast, sharpness, colorfulness, entropy, dominant colors), per-channel histograms, detects exact-file duplicates, and exports results as CSV and JSON.
+LUMEN is a small command-line image analysis tool . It produces per-image metrics (brightness, contrast, sharpness, colorfulness, entropy, dominant colors), per-channel histograms, detects exact-file duplicates, and exports results as CSV and JSON.
 
 ### Stack
-- Language(s): Python 3.9+
-- Runtime / CLI framework: Typer (CLI)
-- Notable libraries: numpy, pandas, pillow (PIL), pydantic
+- Languages : Python 3.9+
+- libraries: numpy, pandas, pillow (PIL), pydantic, pytest
 
 ## Features
 - Load common image formats (PNG, JPG, JPEG, BMP, GIF)
