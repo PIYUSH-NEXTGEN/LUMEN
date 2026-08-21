@@ -91,5 +91,5 @@ pytest -q
 ## Troubleshooting
 - "Folder does not exist": confirm the `--folder` path and that it contains image files.
 - Corrupt/unreadable images will be logged; the analyzer continues with remaining files.
-- Duplicate detection is exact-file hashing (SHA-256). It does not detect visually similar images with different encodings or sizes.
+- **Duplicate detection** currently uses exact byte-level hashing (SHA-256). It detects identical files only — a resized, recompressed, or re-saved copy of the same photo will *not* be flagged, since any byte change produces a different hash. Perceptual/near-duplicate hashing (e.g. average hash) is a possible future improvement.
 
