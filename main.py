@@ -1,6 +1,7 @@
 import logging
 import os
 import typer
+import config
 
 from image_analyzer.stats import image_stats, channel_stats
 from image_analyzer.histogram import histogram
@@ -18,9 +19,19 @@ logger = logging.getLogger(__name__)
 
 
 def analyze(
-    folder: str = typer.Option(..., "--folder", help="Folder containing images to analyze."),
-    output: str = "results.csv",
-    bins: int = typer.Option(256, min=1),
+ folder: str = typer.Option(
+        config.IMAGE_FOLDER, "--folder", help="Folder containing images to analyze."
+   ),
+   output: str = typer.Option(
+        config.CSV_OUTPUT, "--output", help="Path to save the CSV report."
+   ),
+   json_output: str = typer.Option(
+        config.JSON_OUTPUT, "--json-output", help="Path to save the JSON report."
+   ),
+   bins: int = typer.Option(
+        config.HISTOGRAM_BINS, "--bins", min=1, help="Number of histogram bins."
+   ),
+
     verbose: bool = typer.Option(
     False,
     "--verbose",
@@ -124,10 +135,10 @@ def analyze(
         )
 
         export_csv(reports, duplicates, output)
-        export_json(result, "image_results.json")
+        export_json(result, json_output)
 
         logger.info("Results saved to %s", output)
-        logger.info("Results saved to image_results.json")
+        logger.info("Results saved to %s", json_output)
 
         print("=" * 50)
         print(
