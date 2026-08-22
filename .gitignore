@@ -12,3 +12,4 @@ images/
 
 *.csv
 *.egg-info/
+.env
