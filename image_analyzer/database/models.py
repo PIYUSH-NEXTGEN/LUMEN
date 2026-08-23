@@ -21,8 +21,8 @@ class Image(Base):
         back_populates="images"
     )
 
-    file_path: Mapped[ str] = mapped_column(String(1000), nullable=False)
-    file_hash: Mapped[ str] = mapped_column(String(64),  nullable=False)
+    file_path: Mapped[ str] = mapped_column(String(1000), nullable=False, index=True)
+    file_hash: Mapped[ str] = mapped_column(String(64),  nullable=False, index=True)
     analyzed_at: Mapped[ DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     width: Mapped[int] = mapped_column(nullable=True)
