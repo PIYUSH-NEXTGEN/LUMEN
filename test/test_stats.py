@@ -1,10 +1,12 @@
 import numpy as np
 import pytest
+
+
 from image_analyzer.stats import image_stats
 from image_analyzer.histogram import histogram
 from image_analyzer.image_quality import (luminance_brightness, contrast_score,
                                           sharpness_score, colorfulness_score,
-                                          exposure_stats, entropy_score, dominant_colors)
+                                          exposure_stats, entropy_score, dominant_colors, compute_luminance)
 from image_analyzer.duplicate import image_hash, find_duplicates
 
 test_array = np.array(
@@ -37,7 +39,8 @@ def test_luminance_brightness():
         [[[255, 0, 0]]],
         dtype=np.uint8
     )
-    result = luminance_brightness(arr)
+    luminance = compute_luminance(arr)
+    result = luminance_brightness(luminance)
     assert result == pytest.approx(0.299 * 255)
 
 def test_contrast_score():

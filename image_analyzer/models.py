@@ -42,6 +42,8 @@ class DuplicateGroup(BaseModel):
 
 class ImageReport(BaseModel):
     filename : str
+    file_path : str
+    file_hash : str
     image_stats: ImageStats
     channel_stats: ChannelStats
     histogram: HistogramStats

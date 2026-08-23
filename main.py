@@ -3,6 +3,7 @@ import os
 import typer
 import config
 
+from image_analyzer.duplicate import find_duplicates, image_hash
 from image_analyzer.stats import image_stats, channel_stats
 from image_analyzer.histogram import histogram
 from image_analyzer.loader import load_image
@@ -13,6 +14,7 @@ from image_analyzer.image_quality import (luminance_brightness, contrast_score,
                                           sharpness_score, colorfulness_score,
                                           exposure_stats, entropy_score ,
                                           dominant_colors, compute_luminance)
+
 
 
 logging.basicConfig(level=logging.INFO)
@@ -92,6 +94,8 @@ def analyze(
 
             report = ImageReport(
                 filename=image,
+                file_path=image,
+                file_hash=image_hash(image),
                 image_stats=img_stats,
                 channel_stats=ch_stats,
                 histogram=hist,
