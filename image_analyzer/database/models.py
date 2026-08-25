@@ -25,8 +25,8 @@ class Image(Base):
     file_hash: Mapped[ str] = mapped_column(String(64),  nullable=False, index=True)
     analyzed_at: Mapped[ DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    width: Mapped[int] = mapped_column(nullable=True)
-    height: Mapped[int] = mapped_column(nullable=True)
+    width: Mapped[int | None] = mapped_column(nullable=True)
+    height: Mapped[int | None] = mapped_column(nullable=True)
     img_dtype: Mapped[str | None] = mapped_column(String(50), nullable=True)
     mean: Mapped[float | None] = mapped_column(nullable=True)
     std: Mapped[float | None] = mapped_column(nullable=True)
