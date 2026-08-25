@@ -29,41 +29,48 @@ SessionLocal = sessionmaker(
     bind=engine,
 )
 
+def check_db_connection() -> None:
+    with engine.connect():
+        pass
+
 def save_to_db(report: ImageReport):
     session = SessionLocal()
 
     try:
-        image = Image(
-            filename=report.filename,
-            file_path=report.file_path,
-            file_hash=report.file_hash,
-
-            width=report.image_stats.shape[1],
-            height=report.image_stats.shape[0],
-            img_dtype=report.image_stats.dtype,
-            mean=report.image_stats.mean,
-            std=report.image_stats.std,
-            minimum=report.image_stats.minimum,
-            maximum=report.image_stats.maximum,
-
-            mean_brightness=report.mean_brightness,
-            luminance_brightness=report.luminance_brightness,
-            contrast_score=report.contrast_score,
-            sharpness_score=report.sharpness_score,
-            colorfulness_score=report.colorfulness_score,
-            underexposed_pct=report.underexposed_pct,
-            overexposed_pct=report.overexposed_pct,
-            entropy_score=report.entropy_score,
-
-            channel_stats=report.channel_stats.model_dump(),
-            histogram_regions=report.histogram.model_dump(),
-            dominant_colors=[
-                color.model_dump()
-                for color in report.dominant_colors
-            ],
+        image = session.scalar(
+            select(Image).where(Image.file_path == report.file_path)
         )
 
-        session.add(image)
+        if image is None:
+            image = Image(file_path=report.file_path)
+            session.add(image)
+
+        image.filename = report.filename
+        image.file_hash = report.file_hash
+
+        image.width = report.image_stats.shape[1]
+        image.height = report.image_stats.shape[0]
+        image.img_dtype = report.image_stats.dtype
+        image.mean = report.image_stats.mean
+        image.std = report.image_stats.std
+        image.minimum = report.image_stats.minimum
+        image.maximum = report.image_stats.maximum
+
+        image.mean_brightness = report.mean_brightness
+        image.luminance_brightness = report.luminance_brightness
+        image.contrast_score = report.contrast_score
+        image.sharpness_score = report.sharpness_score
+        image.colorfulness_score = report.colorfulness_score
+        image.underexposed_pct = report.underexposed_pct
+        image.overexposed_pct = report.overexposed_pct
+        image.entropy_score = report.entropy_score
+
+        image.channel_stats = report.channel_stats.model_dump()
+        image.histogram_regions = report.histogram.model_dump()
+        image.dominant_colors = [
+            color.model_dump() for color in report.dominant_colors
+        ]
+
         session.commit()
         session.refresh(image)
 

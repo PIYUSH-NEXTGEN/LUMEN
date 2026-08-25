@@ -3,7 +3,7 @@ import os
 import typer
 import config
 
-from image_analyzer.database.connection import save_to_db, save_duplicate_group
+from image_analyzer.database.connection import save_to_db, save_duplicate_group, check_db_connection
 from image_analyzer.duplicate import find_duplicates, image_hash
 from image_analyzer.stats import image_stats, channel_stats
 from image_analyzer.histogram import histogram
@@ -45,6 +45,13 @@ def analyze(
     if not os.path.isdir(folder):
         logger.error("Folder does not exist or is not a directory: %s", folder)
         raise typer.Exit(code=1)
+
+    if save_db:
+        try:
+            check_db_connection()
+        except Exception as error:
+            logger.error("Cannot connect to database: %s", error)
+            raise typer.Exit(code=1)
 
     image_files = []
 
