@@ -1,11 +1,14 @@
 import os
 
+from sqlalchemy import update, select
 from image_analyzer.models import ImageReport
-from image_analyzer.database.models import Image
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.engine import URL
+from image_analyzer.models import DuplicateGroup as ReportDuplicateGroup
+from image_analyzer.database.models import DuplicateGroup  as DuplicateGroupDB, Image
+
 
 load_dotenv()
 
@@ -72,3 +75,23 @@ def save_to_db(report: ImageReport):
 
     finally:
         session.close()
+
+def save_duplicate_group(group: ReportDuplicateGroup) -> None:
+    with SessionLocal() as session:
+        db_group = session.scalar(
+            select(DuplicateGroupDB)
+            .where(DuplicateGroupDB.hash == group.hash)
+        )
+
+        if db_group is None:
+            db_group = DuplicateGroupDB(hash=group.hash)
+            session.add(db_group)
+            session.flush()
+
+        session.execute(
+            update(Image)
+            .where(Image.file_hash == group.hash)
+            .values(duplicate_group_id=db_group.id)
+        )
+
+        session.commit()

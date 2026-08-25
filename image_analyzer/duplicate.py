@@ -1,10 +1,11 @@
 import hashlib
-from .models import DuplicateGroup
+from image_analyzer.models import DuplicateGroup
 
 
 def image_hash(path: str) -> str:
     with open(path, "rb") as file:
         return hashlib.sha256(file.read()).hexdigest()
+
 
 def find_duplicates(paths: list[str]) -> list[DuplicateGroup]:
     hashes: dict[str, list[str]] = {}
@@ -18,7 +19,10 @@ def find_duplicates(paths: list[str]) -> list[DuplicateGroup]:
         hashes[file_hash].append(path)
 
     return [
-        DuplicateGroup(hash=file_hash, files=files)
+        DuplicateGroup(
+            hash=file_hash,
+            files=files
+        )
         for file_hash, files in hashes.items()
         if len(files) > 1
     ]

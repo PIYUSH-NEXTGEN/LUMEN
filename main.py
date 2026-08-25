@@ -3,13 +3,13 @@ import os
 import typer
 import config
 
+from image_analyzer.database.connection import save_to_db, save_duplicate_group
 from image_analyzer.duplicate import find_duplicates, image_hash
 from image_analyzer.stats import image_stats, channel_stats
 from image_analyzer.histogram import histogram
 from image_analyzer.loader import load_image
 from image_analyzer.models import ImageReport, HistogramStats, AnalysisResult
 from image_analyzer.report import find_brightest_darkest, export_csv, export_json,duplicate_summary
-from image_analyzer.duplicate import find_duplicates
 from image_analyzer.image_quality import (luminance_brightness, contrast_score,
                                           sharpness_score, colorfulness_score,
                                           exposure_stats, entropy_score ,
@@ -21,26 +21,21 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+
 def analyze(
  folder: str = typer.Option(
-        config.IMAGE_FOLDER, "--folder", help="Folder containing images to analyze."
-   ),
-   output: str = typer.Option(
-        config.CSV_OUTPUT, "--output", help="Path to save the CSV report."
-   ),
-   json_output: str = typer.Option(
-        config.JSON_OUTPUT, "--json-output", help="Path to save the JSON report."
-   ),
-   bins: int = typer.Option(
-        config.HISTOGRAM_BINS, "--bins", min=1, help="Number of histogram bins."
-   ),
+        config.IMAGE_FOLDER, "--folder", help="Folder containing images to analyze."),
 
-    verbose: bool = typer.Option(
-    False,
-    "--verbose",
-    "-v",
-    help="Enable detailed debug logging.",
-    ),
+   output: str = typer.Option( config.CSV_OUTPUT, "--output", help="Path to save the CSV report."),
+
+   json_output: str = typer.Option( config.JSON_OUTPUT, "--json-output", help="Path to save the JSON report."),
+
+   bins: int = typer.Option( config.HISTOGRAM_BINS, "--bins", min=1, help="Number of histogram bins."),
+
+   verbose: bool = typer.Option( False, "--verbose", "-v", help="Enable detailed debug logging.",),
+
+   save_db: bool = typer.Option( False, "--save-db", help="Save analyzed images to PostgreSQL.",),
+
 ):
     if verbose:
         logger.setLevel(logging.DEBUG)
@@ -112,6 +107,10 @@ def analyze(
 
             reports.append(report)
 
+            if save_db:
+                save_to_db(report)
+                logger.info("Saved to database: %s", image)
+
             logger.info("Successfully analyzed: %s \n", image)
 
         except FileNotFoundError:
@@ -119,6 +118,11 @@ def analyze(
 
         except Exception as error:
             logger.exception("Failed to analyze %s: %s", image, error)
+
+    if save_db:
+        for group in duplicates:
+            save_duplicate_group(group)
+            logger.info("Saved duplicate group: %s", group.hash)
 
     if reports:
         logger.info(
@@ -158,6 +162,7 @@ def analyze(
 
     else:
         logger.warning("No images were successfully analyzed.")
+
 
 def cli():
     typer.run(analyze)
