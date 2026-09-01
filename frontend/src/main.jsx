@@ -78,6 +78,7 @@ function App() {
   const selectedNames = useMemo(() => images.filter(i => selected.includes(i.id)), [images, selected]);
 
   return <main className={dark ? 'site dark' : 'site'}>
+    <div className="global-background" aria-hidden="true" />
     <header><button className="wordmark" onClick={() => setPage('home')}>LUMEN</button><nav>
       <button className={page === 'home' ? 'active' : ''} onClick={() => setPage('home')}>Home</button>
       <button className={page === 'app' ? 'active' : ''} onClick={() => setPage('app')}>Analyzer</button>
@@ -102,7 +103,7 @@ function BookIcon() { return <svg viewBox="0 0 24 24" aria-hidden="true"><path d
 function FlagIcon() { return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 22V3m0 1h11l-1 4 1 4H5" /></svg> }
 
 function Home({ openApp }) { return <>
-  <section className="hero reveal"><p className="eyebrow">IMAGE ANALYSIS, MADE LEGIBLE</p><h1>LUMEN</h1><p>A command-line and API-based image analysis tool for quality metrics, statistics, and duplicate detection.</p><button className="primary" onClick={openApp}>Open analyzer <span>→</span></button></section>
+  <section className="hero reveal"><p className="eyebrow">IMAGE ANALYSIS, MADE LEGIBLE</p><h1 className="brand-heading" aria-label="LUMEN"><span className="brand-text brand-en">LUMEN</span><span className="brand-text brand-ja" aria-hidden="true">ルーメン</span></h1><p>A command-line and API-based image analysis tool for quality metrics, statistics, and duplicate detection.</p><button className="primary" onClick={openApp}>Open analyzer <span>→</span></button></section>
   <section className="content-section"><div className="section-head"><p className="eyebrow">WHAT IT MEASURES</p><h2>Useful detail, without the noise.</h2></div><div className="feature-grid">
     {['Per-image statistics', 'Quality metrics', 'Dominant color extraction', 'Exact duplicate detection', 'CLI exports', 'Optional persistence'].map((title, i) => <article className="feature" key={title}><span>0{i + 1}</span><h3>{title}</h3><p>{['Dimensions, data type, mean, spread, and channel-level values.', 'Brightness, contrast, sharpness, colorfulness, entropy, and exposure.', 'A concise palette with RGB values and share of the image.', 'SHA-256 hash groups identify byte-for-byte matching files.', 'Export analysis as CSV or JSON from the command line.', 'Save analysis results to PostgreSQL when you need a history.'][i]}</p></article>)}
   </div></section>
