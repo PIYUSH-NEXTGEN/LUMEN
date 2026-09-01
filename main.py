@@ -68,8 +68,8 @@ def analyze(
             image = futures[future]
             report = future.result()
 
-            if report is None:
-                logger.error("Failed to analyze image: %s", image)
+            if isinstance(report, str):
+                logger.error("Failed to analyze %s: %s", image, report)
                 continue
 
             reports.append(report)

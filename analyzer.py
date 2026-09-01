@@ -42,5 +42,5 @@ def analyze_one(image_path: str, bins: int) -> ImageReport | None:
             entropy_score=entropy_score(arr),
             dominant_colors=dominant_colors(arr),
         )
-    except Exception:
-        return None
+    except Exception as error:
+        return str(error)
