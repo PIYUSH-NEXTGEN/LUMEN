@@ -65,6 +65,11 @@ def save_to_db(report: ImageReport):
         image.overexposed_pct = report.overexposed_pct
         image.entropy_score = report.entropy_score
 
+        image.aspect_ratio = report.aspect_ratio
+        image.megapixels = report.megapixels
+        image.file_size_kb = report.file_size_kb
+        image.format = report.format
+
         image.channel_stats = report.channel_stats.model_dump()
         image.histogram_regions = report.histogram.model_dump()
         image.dominant_colors = [

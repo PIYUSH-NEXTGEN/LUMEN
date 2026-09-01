@@ -19,6 +19,7 @@ def make_fake_report(path="test_roundtrip.png"):
         sharpness_score=5.0, colorfulness_score=20.0, underexposed_pct=0.0,
         overexposed_pct=0.0, entropy_score=4.0,
         dominant_colors=[DominantColor(color="gray", rgb=(100, 100, 100), percentage=100.0)],
+        aspect_ratio=1.0, megapixels=0.0001, file_size_kb=10.0, format="PNG",
     )
 
 
@@ -37,6 +38,10 @@ def test_save_to_db_roundtrip():
         assert fetched is not None
         assert fetched.file_path == "test_roundtrip.png"
         assert fetched.mean_brightness == 100.0
+        assert fetched.aspect_ratio == 1.0
+        assert fetched.megapixels == 0.0001
+        assert fetched.file_size_kb == 10.0
+        assert fetched.format == "PNG"
         assert fetched.dominant_colors[0]["color"] == "gray"
     finally:
         session.delete(session.get(Image, saved.id))

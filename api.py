@@ -16,6 +16,7 @@ from image_analyzer.image_quality import (
     compute_luminance, luminance_brightness, contrast_score,
     sharpness_score, colorfulness_score, exposure_stats,
     entropy_score, dominant_colors,
+    aspect_ratio, megapixels, file_size_kb, image_format,
 )
 from image_analyzer.models import ImageReport, HistogramStats
 
@@ -68,7 +69,9 @@ async def analyze_image(file: UploadFile = File(...), save_db: bool = False, ses
     contents = await file.read()
 
     try:
-        pil_image = PILImage.open(io.BytesIO(contents)).convert("RGB")
+        pil_image = PILImage.open(io.BytesIO(contents))
+        fmt = image_format(pil_image)
+        pil_image = pil_image.convert("RGB")
     except UnidentifiedImageError:
         raise HTTPException(status_code=400, detail="Uploaded file is not a valid image.")
 
@@ -102,6 +105,10 @@ async def analyze_image(file: UploadFile = File(...), save_db: bool = False, ses
         overexposed_pct=overexposed,
         entropy_score=entropy_score(arr),
         dominant_colors=dominant_colors(arr),
+        aspect_ratio=aspect_ratio(arr),
+        megapixels=megapixels(arr),
+        file_size_kb=file_size_kb(len(contents)),
+        format=fmt,
     )
 
     if save_db:
@@ -146,6 +153,10 @@ def get_image(image_id: int, session=Depends(get_db)):
         "underexposed_pct": img.underexposed_pct,
         "overexposed_pct": img.overexposed_pct,
         "entropy_score": img.entropy_score,
+        "aspect_ratio": img.aspect_ratio,
+        "megapixels": img.megapixels,
+        "file_size_kb": img.file_size_kb,
+        "format": img.format,
         "channel_stats": img.channel_stats,
         "histogram_regions": img.histogram_regions,
         "dominant_colors": img.dominant_colors,

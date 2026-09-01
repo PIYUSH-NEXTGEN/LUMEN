@@ -34,6 +34,10 @@ def export_csv(reports: list[ImageReport], duplicates: list[DuplicateGroup], pat
 
             "width": report.image_stats.shape[1],
             "height": report.image_stats.shape[0],
+            "aspect_ratio": round(report.aspect_ratio, 4),
+            "megapixels": round(report.megapixels, 6),
+            "file_size_kb": round(report.file_size_kb, 2),
+            "format": report.format,
             "mean": round(report.image_stats.mean, 2),
             "std": round(report.image_stats.std, 2),
             "minimum": report.image_stats.minimum,

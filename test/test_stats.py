@@ -9,6 +9,9 @@ from image_analyzer.image_quality import (luminance_brightness, contrast_score,
                                           exposure_stats, entropy_score, dominant_colors, compute_luminance)
 from image_analyzer.duplicate import image_hash, find_duplicates
 from image_analyzer.image_quality import saturation_mean, warm_cool_bias
+from image_analyzer.image_quality import (
+    aspect_ratio, megapixels, file_size_kb, image_format,
+)
 
 
 test_array = np.array(
@@ -166,3 +169,35 @@ def test_warm_cool_bias_neutral():
     gray = np.full((10, 10, 3), 128, dtype=np.uint8)
     result = warm_cool_bias(gray)
     assert result == pytest.approx(0.0)
+
+
+def test_aspect_ratio():
+    arr = np.zeros((4, 8, 3), dtype=np.uint8)
+    assert aspect_ratio(arr) == pytest.approx(2.0)
+
+
+def test_megapixels():
+    arr = np.zeros((2, 4, 3), dtype=np.uint8)
+    assert megapixels(arr) == pytest.approx(8 / 1_000_000)
+
+
+def test_file_size_kb():
+    assert file_size_kb(2048) == pytest.approx(2.0)
+
+
+def test_image_format_png(tmp_path):
+    from PIL import Image
+
+    path = tmp_path / "test.png"
+    Image.new("RGB", (10, 10), color=(255, 0, 0)).save(path)
+    with Image.open(path) as image:
+        assert image_format(image) == "PNG"
+
+
+def test_image_format_jpeg(tmp_path):
+    from PIL import Image
+
+    path = tmp_path / "test.jpg"
+    Image.new("RGB", (10, 10), color=(0, 255, 0)).save(path, format="JPEG")
+    with Image.open(path) as image:
+        assert image_format(image) == "JPEG"

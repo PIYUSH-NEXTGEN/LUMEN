@@ -42,6 +42,11 @@ class Image(Base):
     overexposed_pct: Mapped[float | None] = mapped_column(nullable=True)
     entropy_score: Mapped[float | None] = mapped_column(nullable=True)
 
+    aspect_ratio: Mapped[float | None] = mapped_column(nullable=True)
+    megapixels: Mapped[float | None] = mapped_column(nullable=True)
+    file_size_kb: Mapped[float | None] = mapped_column(nullable=True)
+    format: Mapped[str | None] = mapped_column(String(20), nullable=True)
+
     channel_stats: Mapped[dict] = mapped_column(JSONB,nullable=True)
     histogram_regions: Mapped[dict] = mapped_column(JSONB,nullable=True)
     dominant_colors: Mapped[list] = mapped_column(JSONB,nullable=True)

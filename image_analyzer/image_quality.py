@@ -1,5 +1,25 @@
 import numpy as np
+from PIL import Image
+
 from .models import DominantColor
+
+
+def aspect_ratio(arr: np.ndarray) -> float:
+    height, width = arr.shape[:2]
+    return float(width / height)
+
+
+def megapixels(arr: np.ndarray) -> float:
+    height, width = arr.shape[:2]
+    return float((width * height) / 1_000_000)
+
+
+def file_size_kb(size_bytes: int) -> float:
+    return float(size_bytes / 1024)
+
+
+def image_format(pil_image: Image.Image) -> str:
+    return pil_image.format or "UNKNOWN"
 
 def compute_luminance(arr: np.ndarray) -> np.ndarray:
     red, green, blue = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]

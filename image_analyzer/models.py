@@ -56,6 +56,10 @@ class ImageReport(BaseModel):
     overexposed_pct: float
     entropy_score: float
     dominant_colors: list[DominantColor]
+    aspect_ratio: float
+    megapixels: float
+    file_size_kb: float
+    format: str
 
 class AnalysisResult(BaseModel):
     reports: list[ImageReport]
