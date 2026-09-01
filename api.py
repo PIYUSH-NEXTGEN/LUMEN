@@ -72,9 +72,18 @@ def fetch_images(session=Depends(get_db)):
     ]
 
 
+MAX_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB
+PILImage.MAX_IMAGE_PIXELS = 100_000_000  # 100 MP — blocks decompression bombs
+
+
 @app.post("/analyze", response_model=ImageReport)
 async def analyze_image(file: UploadFile = File(...), save_db: bool = False, session=Depends(get_db)):
-    contents = await file.read()
+    contents = bytearray()
+    while chunk := await file.read(8192):
+        contents.extend(chunk)
+        if len(contents) > MAX_UPLOAD_BYTES:
+            raise HTTPException(status_code=413, detail=f"File too large. Max size is {MAX_UPLOAD_BYTES // (1024 * 1024)} MB.")
+    contents = bytes(contents)
 
     try:
         pil_image = PILImage.open(io.BytesIO(contents))
