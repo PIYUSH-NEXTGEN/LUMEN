@@ -2,10 +2,9 @@ import io
 import hashlib
 import numpy as np
 import config
-from PIL import Image as PILImage
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from PIL import Image as PILImage, UnidentifiedImageError
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from PIL import UnidentifiedImageError
 
 
 from image_analyzer.database.connection import SessionLocal
@@ -35,38 +34,43 @@ app.add_middleware(
 )
 
 
+def get_db():
+    session = SessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()
+
+
 @app.get("/")
 def root():
     return {"status": "ok", "service": "LUMEN API"}
 
 
 @app.get("/images")
-def fetch_images():
-    session = SessionLocal()
-    try:
-        images = session.query(DBImage).all()
-        return [
-            {
-                "id": img.id,
-                "filename": img.filename,
-                "mean_brightness": img.mean_brightness,
-                "luminance_brightness": img.luminance_brightness,
-                "sharpness_score": img.sharpness_score,
-                "analyzed_at": img.analyzed_at,
-            }
-            for img in images
-        ]
-    finally:
-        session.close()
+def fetch_images(session=Depends(get_db)):
+    images = session.query(DBImage).all()
+    return [
+        {
+            "id": img.id,
+            "filename": img.filename,
+            "mean_brightness": img.mean_brightness,
+            "luminance_brightness": img.luminance_brightness,
+            "sharpness_score": img.sharpness_score,
+            "analyzed_at": img.analyzed_at,
+        }
+        for img in images
+    ]
 
 
 @app.post("/analyze", response_model=ImageReport)
 async def analyze_image(file: UploadFile = File(...), save_db: bool = False):
     contents = await file.read()
+
     try:
         pil_image = PILImage.open(io.BytesIO(contents)).convert("RGB")
     except UnidentifiedImageError:
-        raise HTTPException(status_code=400, detail="Uploaded file is not a valid image")
+        raise HTTPException(status_code=400, detail="Uploaded file is not a valid image.")
 
     arr = np.array(pil_image)
 
@@ -103,101 +107,85 @@ async def analyze_image(file: UploadFile = File(...), save_db: bool = False):
     if save_db:
         from image_analyzer.database.connection import save_to_db
         save_to_db(report)
+
     return report
 
 
 @app.get("/images/{image_id}")
-def get_image(image_id: int):
-    session = SessionLocal()
-    try:
-        img = session.get(DBImage, image_id)
-        if img is None:
-            raise HTTPException(status_code=404, detail="Image not found")
+def get_image(image_id: int, session=Depends(get_db)):
+    img = session.get(DBImage, image_id)
+    if img is None:
+        raise HTTPException(status_code=404, detail="Image not found")
 
-        return {
+    return {
+        "id": img.id,
+        "filename": img.filename,
+        "file_path": img.file_path,
+        "file_hash": img.file_hash,
+        "width": img.width,
+        "height": img.height,
+        "mean_brightness": img.mean_brightness,
+        "luminance_brightness": img.luminance_brightness,
+        "contrast_score": img.contrast_score,
+        "sharpness_score": img.sharpness_score,
+        "colorfulness_score": img.colorfulness_score,
+        "underexposed_pct": img.underexposed_pct,
+        "overexposed_pct": img.overexposed_pct,
+        "entropy_score": img.entropy_score,
+        "channel_stats": img.channel_stats,
+        "histogram_regions": img.histogram_regions,
+        "dominant_colors": img.dominant_colors,
+        "analyzed_at": img.analyzed_at,
+    }
+
+
+@app.get("/images/{image_id}/histogram")
+def get_histogram(image_id: int, session=Depends(get_db)):
+    img = session.get(DBImage, image_id)
+    if img is None:
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    return img.histogram_regions
+
+
+@app.get("/compare")
+def compare_images(ids: str, session=Depends(get_db)):
+    try:
+        image_ids = [int(i) for i in ids.split(",")]
+    except ValueError:
+        raise HTTPException(status_code=400, detail="ids must be a comma-separated list of integers, e.g. ids=1,2,3")
+
+    images = session.query(DBImage).filter(DBImage.id.in_(image_ids)).all()
+
+    if not images:
+        raise HTTPException(status_code=404, detail="No matching images found")
+
+    return [
+        {
             "id": img.id,
             "filename": img.filename,
-            "file_path": img.file_path,
-            "file_hash": img.file_hash,
-            "width": img.width,
-            "height": img.height,
             "mean_brightness": img.mean_brightness,
             "luminance_brightness": img.luminance_brightness,
             "contrast_score": img.contrast_score,
             "sharpness_score": img.sharpness_score,
             "colorfulness_score": img.colorfulness_score,
-            "underexposed_pct": img.underexposed_pct,
-            "overexposed_pct": img.overexposed_pct,
             "entropy_score": img.entropy_score,
-            "channel_stats": img.channel_stats,
-            "histogram_regions": img.histogram_regions,
-            "dominant_colors": img.dominant_colors,
-            "analyzed_at": img.analyzed_at,
         }
-    finally:
-        session.close()
-
-
-@app.get("/images/{image_id}/histogram")
-def get_histogram(image_id: int):
-    session = SessionLocal()
-    try:
-        img = session.get(DBImage, image_id)
-        if img is None:
-            raise HTTPException(status_code=404, detail="Image not found")
-
-        return img.histogram_regions
-    finally:
-        session.close()
-
-
-@app.get("/compare")
-def compare_images(ids: str):
-
-    try:
-        image_ids = [int(i) for i in ids.split(",")]
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid image IDs ids must be a comma-separated list of integers, e.g. ids=1,2,3")
-
-    session = SessionLocal()
-    try:
-        images = session.query(DBImage).filter(DBImage.id.in_(image_ids)).all()
-
-        if not images:
-            raise HTTPException(status_code=404, detail="No matching images found")
-
-        return [
-            {
-                "id": img.id,
-                "filename": img.filename,
-                "mean_brightness": img.mean_brightness,
-                "luminance_brightness": img.luminance_brightness,
-                "contrast_score": img.contrast_score,
-                "sharpness_score": img.sharpness_score,
-                "colorfulness_score": img.colorfulness_score,
-                "entropy_score": img.entropy_score,
-            }
-            for img in images
-        ]
-    finally:
-        session.close()
+        for img in images
+    ]
 
 
 @app.get("/duplicates")
-def list_duplicates():
-    session = SessionLocal()
-    try:
-        groups = session.query(DBDuplicateGroup).all()
-        result = []
-        for group in groups:
-            images = session.query(DBImage).filter(DBImage.duplicate_group_id == group.id).all()
-            result.append({
-                "group_id": group.id,
-                "hash": group.hash,
-                "images": [{"id": img.id, "filename": img.filename} for img in images],
-            })
-        return result
-    finally:
-        session.close()
+def list_duplicates(session=Depends(get_db)):
+    groups = session.query(DBDuplicateGroup).all()
+    result = []
+    for group in groups:
+        images = session.query(DBImage).filter(DBImage.duplicate_group_id == group.id).all()
+        result.append({
+            "group_id": group.id,
+            "hash": group.hash,
+            "images": [{"id": img.id, "filename": img.filename} for img in images],
+        })
+    return result
 
 
