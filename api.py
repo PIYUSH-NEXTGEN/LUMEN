@@ -59,6 +59,13 @@ def fetch_images(session=Depends(get_db)):
             "mean_brightness": img.mean_brightness,
             "luminance_brightness": img.luminance_brightness,
             "sharpness_score": img.sharpness_score,
+            "contrast_score": img.contrast_score,
+            "colorfulness_score": img.colorfulness_score,
+            "width": img.width,
+            "height": img.height,
+            "format": img.format,
+            "aspect_ratio": img.aspect_ratio,
+            "dominant_colors": img.dominant_colors,
             "analyzed_at": img.analyzed_at,
         }
         for img in images
@@ -148,6 +155,7 @@ def get_image(image_id: int, session=Depends(get_db)):
         "file_hash": img.file_hash,
         "width": img.width,
         "height": img.height,
+        "img_dtype": img.img_dtype,
         "mean_brightness": img.mean_brightness,
         "luminance_brightness": img.luminance_brightness,
         "contrast_score": img.contrast_score,
