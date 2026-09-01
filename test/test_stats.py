@@ -8,6 +8,8 @@ from image_analyzer.image_quality import (luminance_brightness, contrast_score,
                                           sharpness_score, colorfulness_score,
                                           exposure_stats, entropy_score, dominant_colors, compute_luminance)
 from image_analyzer.duplicate import image_hash, find_duplicates
+from image_analyzer.image_quality import saturation_mean, warm_cool_bias
+
 
 test_array = np.array(
     [[[0, 0, 0], [255, 255, 255]]],
@@ -126,3 +128,41 @@ def test_find_duplicates(tmp_path):
         str(image1),
         str(image2),
     }
+
+def test_saturation_mean_pure_red():
+    red = np.zeros((10, 10, 3), dtype=np.uint8)
+    red[:, :, 0] = 255
+    result = saturation_mean(red)
+    assert result == pytest.approx(100.0)
+
+
+def test_saturation_mean_gray():
+    gray = np.full((10, 10, 3), 128, dtype=np.uint8)
+    result = saturation_mean(gray)
+    assert result == pytest.approx(0.0)
+
+
+def test_saturation_mean_black_no_crash():
+    black = np.zeros((10, 10, 3), dtype=np.uint8)
+    result = saturation_mean(black)
+    assert result == pytest.approx(0.0)
+
+
+def test_warm_cool_bias_warm():
+    red = np.zeros((10, 10, 3), dtype=np.uint8)
+    red[:, :, 0] = 255
+    result = warm_cool_bias(red)
+    assert result == pytest.approx(255.0)
+
+
+def test_warm_cool_bias_cool():
+    blue = np.zeros((10, 10, 3), dtype=np.uint8)
+    blue[:, :, 2] = 200
+    result = warm_cool_bias(blue)
+    assert result == pytest.approx(-200.0)
+
+
+def test_warm_cool_bias_neutral():
+    gray = np.full((10, 10, 3), 128, dtype=np.uint8)
+    result = warm_cool_bias(gray)
+    assert result == pytest.approx(0.0)

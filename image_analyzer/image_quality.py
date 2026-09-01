@@ -130,3 +130,35 @@ def dominant_colors(
         reverse=True,
     )
     return results[:k]
+
+
+def saturation_mean(arr: np.ndarray) -> float:
+    """
+    Mean saturation (S channel of HSV), 0-100 scale.
+    Computed manually from RGB to avoid adding an OpenCV/colorsys
+    dependency for something this simple:
+      S = 0                     if max == 0  (pure black, avoid div/0)
+      S = (max - min) / max     otherwise
+    """
+    arr_float = arr.astype(np.float64)
+    maximum = arr_float.max(axis=2)
+    minimum = arr_float.min(axis=2)
+
+    saturation = np.zeros_like(maximum)
+    nonzero = maximum > 0
+    saturation[nonzero] = (maximum[nonzero] - minimum[nonzero]) / maximum[nonzero]
+
+    return float(saturation.mean() * 100)
+
+
+def warm_cool_bias(arr: np.ndarray) -> float:
+    """
+    Simple warm/cool tone indicator: mean(R) - mean(B).
+    Positive  -> warm (red-leaning)
+    Negative  -> cool (blue-leaning)
+    Near zero -> neutral
+    Range is roughly -255 to 255, but real photos rarely hit the extremes.
+    """
+    red_mean = float(arr[:, :, 0].mean())
+    blue_mean = float(arr[:, :, 2].mean())
+    return red_mean - blue_mean
