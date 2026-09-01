@@ -26,7 +26,7 @@ dependencies = [
 image-analyzer = "main:cli"
 
 [tool.setuptools]
-py-modules = ["main", "config"]
+py-modules = ["main", "config","analyzer"]
 
 [tool.setuptools.packages.find]
 include = ["image_analyzer*"]
