@@ -13,3 +13,5 @@ images/
 *.csv
 *.egg-info/
 .env
+
+fake.txt
