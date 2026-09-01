@@ -64,7 +64,7 @@ def fetch_images(session=Depends(get_db)):
 
 
 @app.post("/analyze", response_model=ImageReport)
-async def analyze_image(file: UploadFile = File(...), save_db: bool = False):
+async def analyze_image(file: UploadFile = File(...), save_db: bool = False, session=Depends(get_db)):
     contents = await file.read()
 
     try:
@@ -105,8 +105,22 @@ async def analyze_image(file: UploadFile = File(...), save_db: bool = False):
     )
 
     if save_db:
-        from image_analyzer.database.connection import save_to_db
+        from image_analyzer.database.connection import save_to_db, save_duplicate_group
+        from image_analyzer.models import DuplicateGroup as ReportDuplicateGroup
+
         save_to_db(report)
+
+        matching = (
+            session.query(DBImage)
+            .filter(DBImage.file_hash == report.file_hash)
+            .all()
+        )
+
+        if len(matching) >= 2:
+            save_duplicate_group(ReportDuplicateGroup(
+                hash=report.file_hash,
+                files=[img.filename for img in matching],
+            ))
 
     return report
 
@@ -146,6 +160,31 @@ def get_histogram(image_id: int, session=Depends(get_db)):
         raise HTTPException(status_code=404, detail="Image not found")
 
     return img.histogram_regions
+
+
+@app.delete("/images/{image_id}", status_code=204)
+def delete_image(image_id: int, session=Depends(get_db)):
+    img = session.get(DBImage, image_id)
+    if img is None:
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    group_id = img.duplicate_group_id
+
+    session.delete(img)
+    session.flush()
+
+    if group_id is not None:
+        remaining = (
+            session.query(DBImage)
+            .filter(DBImage.duplicate_group_id == group_id)
+            .count()
+        )
+        if remaining == 0:
+            group = session.get(DBDuplicateGroup, group_id)
+            if group is not None:
+                session.delete(group)
+
+    session.commit()
 
 
 @app.get("/compare")
