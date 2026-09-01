@@ -4,3 +4,6 @@ BRIGHT_THRESHOLD = 170
 IMAGE_FOLDER = "images"
 CSV_OUTPUT = "image_results.csv"
 JSON_OUTPUT = "image_results.json"
+
+# API upload guard: /analyze rejects files larger than this (HTTP 413).
+MAX_UPLOAD_MB = 50

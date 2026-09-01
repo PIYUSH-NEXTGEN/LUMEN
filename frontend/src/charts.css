@@ -202,6 +202,17 @@
   color: #5C534C;
 }
 
+/* Winner ring per metric group; the rest of the group dims */
+.compare-bars i.is-best {
+  opacity: 1;
+  outline: 1.5px solid #342E2A;
+  outline-offset: 1.5px;
+}
+
+.compare-bars.has-winner i:not(.is-best) {
+  opacity: 0.5;
+}
+
 .chart-caption {
   font-size: 10px !important;
   color: #665D56 !important;
@@ -236,6 +247,10 @@
 
 .dark .compare-bars {
   border-color: rgba(255, 255, 255, 0.14);
+}
+
+.dark .compare-bars i.is-best {
+  outline-color: #f1ede8;
 }
 
 @media (max-width: 480px) {

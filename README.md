@@ -19,6 +19,7 @@ LUMEN is an image analysis tool  usable as a CLI or a REST API that computes per
 - Parallelized batch processing across CPU cores for faster analysis of large folders
 - Analyzed images and duplicate groups persist to PostgreSQL, safely re-run without creating duplicate rows
 - REST API for uploading and querying analysis results (via FastAPI)
+- Web comparison view (in `frontend/`) with per-metric win/loss markers — ↑ leads / ↓ trails with colour coding — across all stats, including saturation, exposure (under/overexposed %), and aspect ratio
 
 ## Project layout
 ```
@@ -145,13 +146,15 @@ Then visit `http://127.0.0.1:8000/docs` for interactive API documentation (Swagg
 |---|---|---|
 | GET | `/` | Health check |
 | POST | `/analyze` | Upload an image, get back its full analysis report (optionally `?save_db=true` to persist it) |
-| GET | `/images` | List all analyzed images stored in the database |
+| GET | `/images` | Paginated list of analyzed images — supports `?limit=` (default 24, max 100), `?offset=`, `?sort=` (`newest`, `oldest`, `name`, `brightness`, `dim`), and `?q=` (filename search); returns `{ items, total, limit, offset }` |
 | GET | `/images/{id}` | Full stored report for one image |
 | GET | `/images/{id}/histogram` | Histogram region data for one image |
 | GET | `/compare?ids=1,2,3` | Compare metrics across multiple images |
 | GET | `/duplicates` | List duplicate image groups |
 
 Invalid uploads and malformed requests return clean `400`/`404` errors with a descriptive message rather than a generic server error.
+
+`POST /analyze` rejects files larger than **50 MB** with an HTTP 413 response (see `config.MAX_UPLOAD_MB`), and the web frontend checks the size before uploading. `/images` is paginated so large galleries are never fetched in one unbounded response.
 
 ---
 

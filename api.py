@@ -5,6 +5,7 @@ import config
 from PIL import Image as PILImage, UnidentifiedImageError
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import nullslast
 
 
 from image_analyzer.database.connection import SessionLocal
@@ -49,30 +50,71 @@ def root():
     return {"status": "ok", "service": "LUMEN API"}
 
 
+SORT_FIELDS = {
+    "newest": (DBImage.analyzed_at, "desc"),
+    "oldest": (DBImage.analyzed_at, "asc"),
+    "name": (DBImage.filename, "asc"),
+    "brightness": (DBImage.mean_brightness, "desc"),
+    "dim": (DBImage.mean_brightness, "asc"),
+}
+DEFAULT_PAGE_SIZE = 24
+MAX_PAGE_SIZE = 100
+
+
 @app.get("/images")
-def fetch_images(session=Depends(get_db)):
-    images = session.query(DBImage).all()
-    return [
-        {
-            "id": img.id,
-            "filename": img.filename,
-            "mean_brightness": img.mean_brightness,
-            "luminance_brightness": img.luminance_brightness,
-            "sharpness_score": img.sharpness_score,
-            "contrast_score": img.contrast_score,
-            "colorfulness_score": img.colorfulness_score,
-            "width": img.width,
-            "height": img.height,
-            "format": img.format,
-            "aspect_ratio": img.aspect_ratio,
-            "dominant_colors": img.dominant_colors,
-            "analyzed_at": img.analyzed_at,
-        }
-        for img in images
-    ]
+def fetch_images(limit: int = DEFAULT_PAGE_SIZE, offset: int = 0, q: str = "", sort: str = "newest", session=Depends(get_db)):
+    """Paginated, sortable, searchable list of analyzed images.
+
+    Returns {"items": [...], "total": int, "limit": int, "offset": int} so
+    clients never need to load the whole table at once.
+    """
+    limit = max(1, min(limit, MAX_PAGE_SIZE))
+    offset = max(0, offset)
+
+    query = session.query(DBImage)
+    if q:
+        query = query.filter(DBImage.filename.ilike(f"%{q}%"))
+    total = query.count()
+
+    column, direction = SORT_FIELDS.get(sort, SORT_FIELDS["newest"])
+    order = getattr(column, direction)()
+    if sort in ("brightness", "dim"):
+        order = nullslast(order)  # keep unmeasured records at the end either way
+
+    images = (
+        query
+        .order_by(order, DBImage.id.desc())  # stable tie-break for pagination
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+
+    return {
+        "items": [
+            {
+                "id": img.id,
+                "filename": img.filename,
+                "mean_brightness": img.mean_brightness,
+                "luminance_brightness": img.luminance_brightness,
+                "sharpness_score": img.sharpness_score,
+                "contrast_score": img.contrast_score,
+                "colorfulness_score": img.colorfulness_score,
+                "width": img.width,
+                "height": img.height,
+                "format": img.format,
+                "aspect_ratio": img.aspect_ratio,
+                "dominant_colors": img.dominant_colors,
+                "analyzed_at": img.analyzed_at,
+            }
+            for img in images
+        ],
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    }
 
 
-MAX_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB
+MAX_UPLOAD_BYTES = config.MAX_UPLOAD_MB * 1024 * 1024  # from config.MAX_UPLOAD_MB
 PILImage.MAX_IMAGE_PIXELS = 100_000_000  # 100 MP — blocks decompression bombs
 
 

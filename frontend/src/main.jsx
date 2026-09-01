@@ -1,17 +1,119 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Component, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
 import './charts.css';
 
 const API = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+const MAX_UPLOAD_MB = 50;      // keep in sync with config.MAX_UPLOAD_MB on the API
+const GALLERY_PAGE_SIZE = 12;  // page size for the saved-records gallery
 const metricLabels = {
   mean_brightness: 'Mean brightness', luminance_brightness: 'Luminance',
   contrast_score: 'Contrast', sharpness_score: 'Sharpness',
   colorfulness_score: 'Colorfulness', entropy_score: 'Entropy',
   underexposed_pct: 'Underexposed %', overexposed_pct: 'Overexposed %',
-  saturation_mean: 'Saturation', aspect_ratio: 'Aspect ratio',
+  saturation_mean: 'Saturation %', aspect_ratio: 'Aspect ratio (w/h)',
   warm_cool_bias: 'Warm/cool bias'
 };
+
+// Diff direction per metric: 'higher' (default) = bigger wins, 'lower' =
+// smaller wins (exposure leakage), 'neutral' = no inherently better value.
+const metricDirection = {
+  underexposed_pct: 'lower',
+  overexposed_pct: 'lower',
+  aspect_ratio: 'neutral',
+  warm_cool_bias: 'neutral'
+};
+
+function nearlyEqual(a, b) {
+  return Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(a), Math.abs(b));
+}
+
+// { best, worst } for a comparable metric, or null when there is nothing to
+// diff: neutral metric, fewer than two usable values, or an all-way tie.
+function metricDiff(data, key) {
+  const direction = metricDirection[key] || 'higher';
+  if (direction === 'neutral') return null;
+  const values = data.map(image => Number(image[key])).filter(Number.isFinite);
+  if (values.length < 2) return null;
+  const best = direction === 'lower' ? Math.min(...values) : Math.max(...values);
+  const worst = direction === 'lower' ? Math.max(...values) : Math.min(...values);
+  if (nearlyEqual(best, worst)) return null;
+  return { best, worst };
+}
+
+// 'best' | 'worst' | undefined for one value within a metric's diff.
+function metricStanding(value, diff) {
+  if (!diff || !Number.isFinite(value)) return undefined;
+  if (nearlyEqual(value, diff.best)) return 'best';
+  if (nearlyEqual(value, diff.worst)) return 'worst';
+  return undefined;
+}
+
+// One-line plain-English explanations shown via the info tips in the report.
+const metricDescriptions = {
+  Dimensions: 'Pixel width × height of the analyzed image.',
+  Format: 'Container format detected from the file bytes, e.g. PNG or JPEG.',
+  'File size': 'Size of the uploaded file in kilobytes.',
+  Megapixels: 'Total pixel count in millions (width × height ÷ 1,000,000).',
+  'Aspect ratio': 'Width divided by height — 1.00 is square, 1.78 is 16:9 landscape.',
+  'Data type': 'Numeric type used for pixel values (uint8 stores 0–255 integers).',
+  Brightness: 'Average pixel intensity from 0 (black) to 255 (white).',
+  Contrast: 'Spread of pixel intensities — higher means darks and lights differ more.',
+  Sharpness: 'Edge detail via Laplacian variance — higher usually means crisper focus.',
+  Colorfulness: 'How vivid and varied the colours are, from grayscale (0) to vibrant.',
+  Entropy: 'How much visual complexity/detail the image contains — higher means more varied content.',
+  Saturation: 'Average colour intensity as a percentage — 0% is grayscale, 100% is fully saturated.',
+  'Warm/cool': 'Colour temperature lean — negative is cool (blue), positive is warm (orange).',
+  Exposure: 'Share of pixels that are too dark (underexposed) or too bright (overexposed).',
+};
+
+// Small info icon that reveals its one-line explanation on hover and keyboard focus.
+function InfoTip({ text }) {
+  return (
+    <button
+      type="button"
+      className="info-tip"
+      data-tip={text}
+      aria-label={text}
+      onClick={event => event.stopPropagation()}
+    >
+      i
+    </button>
+  );
+}
+
+// Shimmering placeholders shown while data is being fetched.
+function SkeletonCards({ count = 8 }) {
+  return Array.from({ length: count }, (_, index) => (
+    <div className="image-card skeleton-card" key={index} aria-hidden="true">
+      <div className="skeleton skeleton-mark" />
+      <div className="skeleton skeleton-line w-70" />
+      <div className="skeleton skeleton-line w-45" />
+      <div className="skeleton skeleton-line w-85" />
+      <div className="skeleton-chip-row">
+        <span className="skeleton skeleton-chip" />
+        <span className="skeleton skeleton-chip" />
+        <span className="skeleton skeleton-chip" />
+      </div>
+    </div>
+  ));
+}
+
+function ReportSkeleton() {
+  return (
+    <div className="report-skeleton" aria-hidden="true">
+      <div className="skeleton skeleton-line w-45" />
+      <div className="skeleton skeleton-line w-85" />
+      <div className="skeleton skeleton-block" />
+      <div className="report-skeleton-grid">
+        <div className="skeleton skeleton-tile" />
+        <div className="skeleton skeleton-tile" />
+        <div className="skeleton skeleton-tile" />
+        <div className="skeleton skeleton-tile" />
+      </div>
+    </div>
+  );
+}
 
 // Normalization caps for profile chart and stat-card mini bars
 const profileMetrics = [
@@ -95,46 +197,104 @@ function App() {
   const [preview, setPreview] = useState(null);
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
+  const [toasts, setToasts] = useState([]);
+  const [galleryPage, setGalleryPage] = useState(0);
+  const [galleryQuery, setGalleryQuery] = useState('');
+  const [gallerySort, setGallerySort] = useState('newest');
+  const [galleryTotal, setGalleryTotal] = useState(0);
+  const [galleryLoading, setGalleryLoading] = useState(false);
   const [detailId, setDetailId] = useState(null);
   const [detailReport, setDetailReport] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState('');
   const fileRef = useRef();
+  const toastSeq = useRef(0);
+  const lastGalleryFetch = useRef('');
 
-  const fetchSaved = async () => {
-    const response = await fetch(`${API}/images`);
-    if (!response.ok) throw new Error('Could not load saved images. Is the API running?');
-    const data = await response.json();
-    setImages(data);
-    return data;
-  };
+  const pushToast = useCallback((kind, text) => {
+    const id = ++toastSeq.current;
+    setToasts(current => [...current, { id, kind, text }].slice(-4));
+    window.setTimeout(() => {
+      setToasts(current => current.filter(toast => toast.id !== id));
+    }, 4500);
+  }, []);
+  const dismissToast = useCallback(id => {
+    setToasts(current => current.filter(toast => toast.id !== id));
+  }, []);
+  const fetchSaved = useCallback(async (options = {}) => {
+    const nextPage = options.page ?? galleryPage;
+    const nextQuery = options.q ?? galleryQuery;
+    const nextSort = options.sort ?? gallerySort;
+    setGalleryQuery(nextQuery);
+    setGallerySort(nextSort);
+    setGalleryPage(nextPage);
+    lastGalleryFetch.current = `${nextPage}|${nextQuery.trim()}|${nextSort}`;
+    setGalleryLoading(true);
+    try {
+      const params = new URLSearchParams({
+        limit: String(GALLERY_PAGE_SIZE),
+        offset: String(nextPage * GALLERY_PAGE_SIZE),
+        sort: nextSort,
+      });
+      if (nextQuery.trim()) params.set('q', nextQuery.trim());
+      const response = await fetch(`${API}/images?${params.toString()}`);
+      if (!response.ok) throw new Error('Could not load saved images. Is the API running?');
+      const data = await response.json();
+      // Tolerate both the paginated { items, total, ... } shape and a legacy
+      // bare array (e.g. an API server that has not picked up pagination yet).
+      const payload = Array.isArray(data)
+        ? { items: data, total: data.length, limit: data.length, offset: 0 }
+        : data;
+      const items = Array.isArray(payload.items) ? payload.items : [];
+      setImages(items);
+      setGalleryTotal(Number.isFinite(payload.total) ? payload.total : items.length);
+      return payload;
+    } finally {
+      setGalleryLoading(false);
+    }
+  }, [galleryPage, galleryQuery, gallerySort]);
   const fetchDuplicates = async () => {
     const response = await fetch(`${API}/duplicates`);
     if (!response.ok) throw new Error('Could not load duplicate groups.');
     setDuplicates(await response.json());
   };
   useEffect(() => {
-    if (page === 'app') {
-      fetchSaved().catch(error => setMessage(error.message));
-      fetchDuplicates().catch(() => {});
-    }
+    if (page === 'app') fetchDuplicates().catch(() => {});
   }, [page]);
+  useEffect(() => {
+    if (page !== 'app') {
+      lastGalleryFetch.current = '';
+      return undefined;
+    }
+    const key = `${galleryPage}|${galleryQuery.trim()}|${gallerySort}`;
+    if (lastGalleryFetch.current === key) return undefined;
+    const timer = window.setTimeout(() => {
+      fetchSaved().catch(error => pushToast('error', error.message));
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [page, galleryPage, galleryQuery, gallerySort, fetchSaved, pushToast]);
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
 
   const pickFile = (event) => {
     const next = event.target.files?.[0];
     if (!next) return;
+    if (next.size > MAX_UPLOAD_MB * 1024 * 1024) {
+      pushToast('error', `"${next.name}" is ${Math.ceil(next.size / (1024 * 1024))} MB — the upload limit is ${MAX_UPLOAD_MB} MB.`);
+      if (fileRef.current) fileRef.current.value = '';
+      return;
+    }
     if (preview) URL.revokeObjectURL(preview);
     setFile(next);
     setPreview(URL.createObjectURL(next));
     setReport(null);
-    setMessage('');
   };
   const analyze = async () => {
     if (!file) return;
+    if (file.size > MAX_UPLOAD_MB * 1024 * 1024) {
+      pushToast('error', `That file exceeds the ${MAX_UPLOAD_MB} MB upload limit.`);
+      return;
+    }
     setLoading(true);
-    setMessage('');
     try {
       const form = new FormData();
       form.append('file', file);
@@ -142,13 +302,13 @@ function App() {
       if (!response.ok) throw new Error((await response.json().catch(() => ({}))).detail || 'Analysis failed.');
       const data = await response.json();
       setReport(data);
-      const saved = await fetchSaved();
-      const matching = [...saved].reverse().find(image => image.filename === data.filename);
+      const saved = await fetchSaved({ page: 0, q: '', sort: 'newest' });
+      const matching = saved.items.find(image => image.filename === data.filename);
       if (matching) setSelected(current => (current.includes(matching.id) ? current : [...current, matching.id]));
       await fetchDuplicates();
-      setMessage('Analysis complete and saved to the gallery.');
+      pushToast('success', 'Analysis complete and saved to the gallery.');
     } catch (error) {
-      setMessage(error.message);
+      pushToast('error', error.message);
     } finally {
       setLoading(false);
     }
@@ -160,13 +320,12 @@ function App() {
   const runCompare = async () => {
     if (selected.length < 2) return;
     setLoading(true);
-    setMessage('');
     try {
       const response = await fetch(`${API}/compare?ids=${selected.join(',')}`);
       if (!response.ok) throw new Error('Unable to compare these images.');
       setCompare(await response.json());
     } catch (error) {
-      setMessage(error.message);
+      pushToast('error', error.message);
     } finally {
       setLoading(false);
     }
@@ -197,17 +356,18 @@ function App() {
     try {
       const response = await fetch(`${API}/images/${id}`, { method: 'DELETE' });
       if (!response.ok) throw new Error('Delete failed.');
-      setImages(current => current.filter(image => image.id !== id));
       setSelected(current => current.filter(x => x !== id));
       setCompare(current => current.filter(image => image.id !== id));
       if (detailId === id) closeDetail();
       await fetchDuplicates();
-      setMessage('Record deleted.');
+      const saved = await fetchSaved();
+      if (!saved.items.length && galleryPage > 0) await fetchSaved({ page: galleryPage - 1 });
+      pushToast('success', 'Record deleted.');
     } catch (error) {
-      setMessage(error.message);
+      pushToast('error', error.message);
     }
   };
-  const selectedNames = useMemo(() => images.filter(i => selected.includes(i.id)), [images, selected]);
+  const selectedNames = useMemo(() => (images || []).filter(i => selected.includes(i.id)), [images, selected]);
 
   return (
     <main className={dark ? 'site dark' : 'site'}>
@@ -228,8 +388,14 @@ function App() {
           preview={preview}
           report={report}
           loading={loading}
-          message={message}
-          images={images}
+          gallery={{
+            items: images,
+            total: galleryTotal,
+            page: galleryPage,
+            query: galleryQuery,
+            sort: gallerySort,
+            loading: galleryLoading,
+          }}
           selected={selected}
           compare={compare}
           duplicates={duplicates}
@@ -240,7 +406,10 @@ function App() {
           runCompare={runCompare}
           openDetail={openDetail}
           deleteImage={deleteImage}
-          fetchSaved={fetchSaved}
+          refreshSaved={fetchSaved}
+          onGallerySearch={query => { setGalleryQuery(query); setGalleryPage(0); }}
+          onGallerySort={sort => { setGallerySort(sort); setGalleryPage(0); }}
+          onGalleryPage={setGalleryPage}
           fileRef={fileRef}
         />
       )}
@@ -253,15 +422,45 @@ function App() {
         />
       )}
       <footer className="site-footer">
-        <span className="footer-note">LUMEN — built as a learning project</span>
-        <div className="footer-links">
-          <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN" target="_blank" rel="noopener noreferrer"><GitHubIcon />GitHub</a>
-          <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN#readme" target="_blank" rel="noopener noreferrer"><BookIcon />Docs / README</a>
-          <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">License</a>
-          <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN/issues" target="_blank" rel="noopener noreferrer"><FlagIcon />Report an issue / Contribute</a>
+        <div className="footer-main">
+          <div className="footer-brand">
+            <span className="footer-note">LUMEN — built as a learning project</span>
+            <a
+              className="footer-how"
+              href="https://github.com/PIYUSH-NEXTGEN/LUMEN#project-layout"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              How it works →
+            </a>
+          </div>
+          <nav className="footer-links" aria-label="Project links">
+            <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN" target="_blank" rel="noopener noreferrer"><GitHubIcon />GitHub</a>
+            <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN#readme" target="_blank" rel="noopener noreferrer"><BookIcon />Docs / README</a>
+            <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">License</a>
+            <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN/issues" target="_blank" rel="noopener noreferrer"><FlagIcon />Report an issue / Contribute</a>
+          </nav>
         </div>
-        <span>© 2026</span>
+        <div className="footer-meta">
+          <div className="footer-stack" aria-label="Built with">
+            <span className="stack-badge">React</span>
+            <span className="stack-badge">FastAPI</span>
+            <span className="stack-badge">PostgreSQL</span>
+          </div>
+          <span>© 2026</span>
+        </div>
       </footer>
+      <div className="toast-stack" aria-live="polite">
+        {toasts.map(toast => (
+          <div key={toast.id} className={`toast toast-${toast.kind}`} role="status">
+            <span className="toast-icon" aria-hidden="true">
+              {toast.kind === 'error' ? '✕' : toast.kind === 'success' ? '✓' : 'ℹ'}
+            </span>
+            <p>{toast.text}</p>
+            <button type="button" className="toast-close" aria-label="Dismiss notification" onClick={() => dismissToast(toast.id)}>×</button>
+          </div>
+        ))}
+      </div>
     </main>
   );
 }
@@ -321,9 +520,9 @@ function Home({ openApp }) {
 
 function Analyzer(props) {
   const {
-    file, preview, report, loading, message, images, selected, compare, duplicates,
-    selectedNames, pickFile, analyze, toggle, runCompare, openDetail, deleteImage,
-    fetchSaved, fileRef,
+    file, preview, report, loading, gallery, selected, compare, duplicates,
+    selectedNames, pickFile, analyze, toggle, runCompare, openDetail,
+    deleteImage, refreshSaved, onGallerySearch, onGallerySort, onGalleryPage, fileRef,
   } = props;
 
   return (
@@ -336,7 +535,16 @@ function Analyzer(props) {
       <section className="upload-layout">
         <div
           className="upload-box"
+          role="button"
+          tabIndex={0}
+          aria-label="Choose an image to analyze"
           onClick={() => fileRef.current.click()}
+          onKeyDown={event => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              fileRef.current.click();
+            }
+          }}
           onDragOver={event => event.preventDefault()}
           onDrop={event => {
             event.preventDefault();
@@ -346,13 +554,19 @@ function Analyzer(props) {
           <input ref={fileRef} type="file" accept="image/*" onChange={pickFile} />
           <div className="upload-symbol">↑</div>
           <h2>{file ? file.name : 'Choose an image'}</h2>
-          <p>{file ? `${Math.ceil(file.size / 1024)} KB · ready to analyze` : 'Drop a PNG, JPEG, or WebP here, or browse your device.'}</p>
+          <p>
+            {file
+              ? `${Math.ceil(file.size / 1024)} KB · ready to analyze`
+              : `Drop a PNG, JPEG, or WebP here, or browse your device (max ${MAX_UPLOAD_MB} MB).`}
+          </p>
           {preview && <img src={preview} alt="Selected preview" />}
         </div>
         <div className="analysis-card">
           <p className="eyebrow">ANALYSIS</p>
           {report ? (
             <Report report={report} />
+          ) : loading ? (
+            <ReportSkeleton />
           ) : (
             <>
               <h2>Start with one image.</h2>
@@ -364,22 +578,43 @@ function Analyzer(props) {
           </button>
         </div>
       </section>
-      {message && <p className="message">{message}</p>}
       <section className="workspace-section">
         <div className="section-line">
           <div>
             <p className="eyebrow">SAVED RECORDS</p>
-            <h2>Gallery <small>{images.length} images</small></h2>
+            <h2>Gallery <small>{gallery.total} images</small></h2>
           </div>
-          <button type="button" className="text-button" onClick={() => fetchSaved().catch(() => {})}>Refresh</button>
+          <button type="button" className="text-button" onClick={() => refreshSaved()}>Refresh</button>
+        </div>
+        <div className="gallery-controls">
+          <input
+            type="search"
+            className="gallery-search"
+            placeholder="Search filenames…"
+            aria-label="Search saved images by filename"
+            value={gallery.query}
+            onChange={event => onGallerySearch(event.target.value)}
+          />
+          <select
+            className="gallery-sort"
+            aria-label="Sort saved images"
+            value={gallery.sort}
+            onChange={event => onGallerySort(event.target.value)}
+          >
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="name">Filename A–Z</option>
+            <option value="brightness">Brightness high → low</option>
+            <option value="dim">Brightness low → high</option>
+          </select>
         </div>
         <p className="selection-note">
           {selected.length
             ? `${selected.length} selected — ${selectedNames.map(i => i.filename).join(', ')}`
             : 'Click a card to view full stats. Select two or more to compare.'}
         </p>
-        <div className="gallery">
-          {images.map((image, index) => (
+        <div className={`gallery${gallery.loading && gallery.items.length ? ' is-refreshing' : ''}`}>
+          {gallery.items.map((image, index) => (
             <GalleryCard
               key={image.id}
               image={image}
@@ -390,8 +625,36 @@ function Analyzer(props) {
               onDelete={deleteImage}
             />
           ))}
-          {!images.length && <p className="empty">No saved images yet. Analyze one above to begin.</p>}
+          {!gallery.items.length && gallery.loading && <SkeletonCards />}
+          {!gallery.items.length && !gallery.loading && (
+            <p className="empty">
+              {gallery.query ? 'No images match this search.' : 'No saved images yet. Analyze one above to begin.'}
+            </p>
+          )}
         </div>
+        {gallery.total > GALLERY_PAGE_SIZE && (
+          <div className="gallery-pagination">
+            <button
+              type="button"
+              className="text-button"
+              disabled={gallery.page === 0}
+              onClick={() => onGalleryPage(gallery.page - 1)}
+            >
+              ← Prev
+            </button>
+            <span className="page-status">
+              Page {gallery.page + 1} of {Math.max(1, Math.ceil(gallery.total / GALLERY_PAGE_SIZE))} · {gallery.total} images
+            </span>
+            <button
+              type="button"
+              className="text-button"
+              disabled={(gallery.page + 1) * GALLERY_PAGE_SIZE >= gallery.total}
+              onClick={() => onGalleryPage(gallery.page + 1)}
+            >
+              Next →
+            </button>
+          </div>
+        )}
         <div className="compare-action">
           <button type="button" className="primary" disabled={selected.length < 2 || loading} onClick={runCompare}>
             Compare selected <span>→</span>
@@ -495,7 +758,7 @@ function GalleryModal({ report, loading, error, onClose }) {
     <div className="modal-backdrop" onClick={onClose} role="presentation">
       <div className="modal-panel" onClick={event => event.stopPropagation()} role="dialog" aria-modal="true" aria-label="Image analysis details">
         <button type="button" className="modal-close" onClick={onClose} aria-label="Close">×</button>
-        {loading && <p className="modal-status">Loading full report…</p>}
+        {loading && <ReportSkeleton />}
         {error && <p className="modal-status modal-error">{error}</p>}
         {report && <Report report={report} inModal />}
       </div>
@@ -503,12 +766,15 @@ function GalleryModal({ report, loading, error, onClose }) {
   );
 }
 
-function StatCard({ label, value, max, delay }) {
+function StatCard({ label, value, max, delay, info }) {
   const display = typeof value === 'string' ? value : format(value);
   const barWidth = max ? normalizePercent(value, max) : null;
   return (
     <Reveal className="stat-card" delay={delay}>
-      <span className="stat-label">{label}</span>
+      <span className="stat-label">
+        {label}
+        {info && <InfoTip text={info} />}
+      </span>
       <strong className="stat-value">{display}</strong>
       {barWidth != null && (
         <div className="stat-bar" aria-hidden="true">
@@ -576,6 +842,7 @@ function Report({ report, inModal = false }) {
               label={tile.label}
               value={tile.value}
               max={tile.max}
+              info={metricDescriptions[tile.label]}
               delay={index * 60}
             />
           ))}
@@ -685,27 +952,33 @@ function CompareChart({ data }) {
       </div>
       <div className="compare-chart">
         {Object.entries(metricLabels).map(([key, label]) => {
+          const diff = metricDiff(data, key);
           const max = Math.max(...data.map(image => Number(image[key]) || 0), 1);
           return (
             <div className="compare-group" key={key}>
-              <div className="compare-bars">
-                {data.map((image, index) => (
-                  <i
-                    key={image.id}
-                    style={{
-                      height: `${((Number(image[key]) || 0) / max) * 100}%`,
-                      background: shades[index % shades.length],
-                    }}
-                    title={`${image.filename}: ${format(image[key])}`}
-                  />
-                ))}
+              <div className={`compare-bars${diff ? ' has-winner' : ''}`}>
+                {data.map((image, index) => {
+                  const standing = metricStanding(Number(image[key]), diff);
+                  const suffix = standing === 'best' ? ' — leads' : standing === 'worst' ? ' — trails' : '';
+                  return (
+                    <i
+                      key={image.id}
+                      className={standing === 'best' ? 'is-best' : undefined}
+                      style={{
+                        height: `${((Number(image[key]) || 0) / max) * 100}%`,
+                        background: shades[index % shades.length],
+                      }}
+                      title={`${image.filename}: ${format(image[key])}${suffix}`}
+                    />
+                  );
+                })}
               </div>
               <span>{label}</span>
             </div>
           );
         })}
       </div>
-      <p className="chart-caption">Each metric group is scaled to its highest selected value; exact values remain in the table.</p>
+      <p className="chart-caption">Each metric group is scaled to its highest selected value; the outlined bar leads that metric (lower wins for under/overexposed %). Exact values and win/loss markers are in the table.</p>
     </div>
   );
 }
@@ -725,18 +998,66 @@ function Compare({ data }) {
             </tr>
           </thead>
           <tbody>
-            {Object.entries(metricLabels).map(([key, label]) => (
-              <tr key={key}>
-                <td>{label}</td>
-                {data.map(image => <td key={image.id}>{format(image[key])}</td>)}
-              </tr>
-            ))}
+            {Object.entries(metricLabels).map(([key, label]) => {
+              const diff = metricDiff(data, key);
+              return (
+                <tr key={key}>
+                  <td>{label}</td>
+                  {data.map(image => {
+                    const standing = metricStanding(Number(image[key]), diff);
+                    return (
+                      <td key={image.id} className={standing ? `diff-${standing}` : undefined}>
+                        {format(image[key])}
+                        {standing === 'best' && <span className="diff-mark" title="Leads on this metric">↑</span>}
+                        {standing === 'worst' && <span className="diff-mark" title="Trails on this metric">↓</span>}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
+      <p className="diff-legend">
+        <span><b className="diff-up">↑</b> leads this metric</span>
+        <span><b className="diff-down">↓</b> trails this metric</span>
+        <span>Lower wins for under/overexposed %; aspect ratio and warm/cool bias have no better direction.</span>
+      </p>
       <p className="table-note">This is a numerical comparison, not a visual similarity score.</p>
     </div>
   );
 }
 
-createRoot(document.getElementById('root')).render(<App />);
+// Last-resort guard: renders the actual error instead of a blank page.
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+
+  render() {
+    const { error } = this.state;
+    if (!error) return this.props.children;
+    return (
+      <div className="error-boundary" role="alert">
+        <p className="eyebrow">SOMETHING BROKE</p>
+        <h2>The interface hit an unexpected error.</h2>
+        <p>{String(error?.message || error)}</p>
+        <button type="button" className="primary" onClick={() => window.location.reload()}>
+          Reload <span>→</span>
+        </button>
+      </div>
+    );
+  }
+}
+
+createRoot(document.getElementById('root')).render(
+  <ErrorBoundary>
+    <App />
+  </ErrorBoundary>,
+);
