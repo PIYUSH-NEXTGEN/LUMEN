@@ -8,6 +8,8 @@ NEW_COLUMNS = [
     ("megapixels", "DOUBLE PRECISION"),
     ("file_size_kb", "DOUBLE PRECISION"),
     ("format", "VARCHAR(20)"),
+    ("saturation_mean", "DOUBLE PRECISION"),
+    ("warm_cool_bias", "DOUBLE PRECISION"),
 ]
 
 Base.metadata.create_all(engine)

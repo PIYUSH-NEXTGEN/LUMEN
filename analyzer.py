@@ -10,6 +10,7 @@ from image_analyzer.image_quality import (
     sharpness_score, colorfulness_score, exposure_stats,
     entropy_score, dominant_colors,
     aspect_ratio, megapixels, file_size_kb,
+    saturation_mean, warm_cool_bias,
 )
 
 
@@ -48,6 +49,8 @@ def analyze_one(image_path: str, bins: int) -> ImageReport | None:
             megapixels=megapixels(arr),
             file_size_kb=file_size_kb(os.path.getsize(image_path)),
             format=fmt,
+            saturation_mean=saturation_mean(arr),
+            warm_cool_bias=warm_cool_bias(arr),
         )
     except Exception as error:
         return str(error)

@@ -17,6 +17,7 @@ from image_analyzer.image_quality import (
     sharpness_score, colorfulness_score, exposure_stats,
     entropy_score, dominant_colors,
     aspect_ratio, megapixels, file_size_kb, image_format,
+    saturation_mean, warm_cool_bias,
 )
 from image_analyzer.models import ImageReport, HistogramStats
 
@@ -109,6 +110,8 @@ async def analyze_image(file: UploadFile = File(...), save_db: bool = False, ses
         megapixels=megapixels(arr),
         file_size_kb=file_size_kb(len(contents)),
         format=fmt,
+        saturation_mean=saturation_mean(arr),
+        warm_cool_bias=warm_cool_bias(arr),
     )
 
     if save_db:
@@ -157,6 +160,8 @@ def get_image(image_id: int, session=Depends(get_db)):
         "megapixels": img.megapixels,
         "file_size_kb": img.file_size_kb,
         "format": img.format,
+        "saturation_mean": img.saturation_mean,
+        "warm_cool_bias": img.warm_cool_bias,
         "channel_stats": img.channel_stats,
         "histogram_regions": img.histogram_regions,
         "dominant_colors": img.dominant_colors,
@@ -220,6 +225,11 @@ def compare_images(ids: str, session=Depends(get_db)):
             "sharpness_score": img.sharpness_score,
             "colorfulness_score": img.colorfulness_score,
             "entropy_score": img.entropy_score,
+            "underexposed_pct": img.underexposed_pct,
+            "overexposed_pct": img.overexposed_pct,
+            "saturation_mean": img.saturation_mean,
+            "aspect_ratio": img.aspect_ratio,
+            "warm_cool_bias": img.warm_cool_bias,
         }
         for img in images
     ]

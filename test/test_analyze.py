@@ -17,3 +17,5 @@ def test_analyze_one_metadata(tmp_path):
     assert report.megapixels == pytest.approx(0.005)
     assert report.file_size_kb == pytest.approx(os.path.getsize(path) / 1024)
     assert report.format == "PNG"
+    assert 0 <= report.saturation_mean <= 100
+    assert report.warm_cool_bias == pytest.approx(128 - 32)

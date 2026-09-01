@@ -60,6 +60,8 @@ class ImageReport(BaseModel):
     megapixels: float
     file_size_kb: float
     format: str
+    saturation_mean: float
+    warm_cool_bias: float
 
 class AnalysisResult(BaseModel):
     reports: list[ImageReport]

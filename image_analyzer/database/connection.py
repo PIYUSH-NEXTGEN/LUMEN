@@ -69,6 +69,8 @@ def save_to_db(report: ImageReport):
         image.megapixels = report.megapixels
         image.file_size_kb = report.file_size_kb
         image.format = report.format
+        image.saturation_mean = report.saturation_mean
+        image.warm_cool_bias = report.warm_cool_bias
 
         image.channel_stats = report.channel_stats.model_dump()
         image.histogram_regions = report.histogram.model_dump()

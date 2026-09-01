@@ -47,6 +47,9 @@ class Image(Base):
     file_size_kb: Mapped[float | None] = mapped_column(nullable=True)
     format: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
+    saturation_mean: Mapped[float | None] = mapped_column(nullable=True)
+    warm_cool_bias: Mapped[float | None] = mapped_column(nullable=True)
+
     channel_stats: Mapped[dict] = mapped_column(JSONB,nullable=True)
     histogram_regions: Mapped[dict] = mapped_column(JSONB,nullable=True)
     dominant_colors: Mapped[list] = mapped_column(JSONB,nullable=True)

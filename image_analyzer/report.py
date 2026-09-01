@@ -67,6 +67,8 @@ def export_csv(reports: list[ImageReport], duplicates: list[DuplicateGroup], pat
             "underexposed_pct": round(report.underexposed_pct, 2),
             "overexposed_pct": round(report.overexposed_pct, 2),
             "entropy_score": round(report.entropy_score, 2),
+            "saturation_mean": round(report.saturation_mean, 2),
+            "warm_cool_bias": round(report.warm_cool_bias, 2),
             "dominant_colors": ", ".join(
                 f"{color.color} ({round(color.percentage, 2)}%)"
                 for color in report.dominant_colors
