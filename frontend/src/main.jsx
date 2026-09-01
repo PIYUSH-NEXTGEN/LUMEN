@@ -1,4 +1,4 @@
-import { Component, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Component, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
 import './charts.css';
@@ -6,6 +6,13 @@ import './charts.css';
 const API = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 const MAX_UPLOAD_MB = 50;      // keep in sync with config.MAX_UPLOAD_MB on the API
 const GALLERY_PAGE_SIZE = 12;  // page size for the saved-records gallery
+const TOUR_KEY = 'lumen-tour-done';
+const tourSteps = [
+  { id: 'upload', title: 'Upload', text: 'Drop a PNG, JPEG, or WebP here — or click the box to browse your device.' },
+  { id: 'analyze', title: 'Analyze & save', text: 'Runs the full quality analysis and saves the record to your gallery below.' },
+  { id: 'gallery', title: 'Gallery — select', text: 'Every saved record lives here. Tick the checkbox on a card to select it for comparison.' },
+  { id: 'compare', title: 'Compare', text: 'Select two or more records, then compare their metrics side by side.' },
+];
 const metricLabels = {
   mean_brightness: 'Mean brightness', luminance_brightness: 'Luminance',
   contrast_score: 'Contrast', sharpness_score: 'Sharpness',
@@ -115,16 +122,6 @@ function ReportSkeleton() {
   );
 }
 
-// Normalization caps for profile chart and stat-card mini bars
-const profileMetrics = [
-  { key: 'mean_brightness', label: 'Brightness', max: 255 },
-  { key: 'contrast_score', label: 'Contrast', max: 127 },
-  { key: 'sharpness_score', label: 'Sharpness', max: 5000 },
-  { key: 'colorfulness_score', label: 'Colorfulness', max: 255 },
-  { key: 'entropy_score', label: 'Entropy', max: 8 },
-  { key: 'saturation_mean', label: 'Saturation', max: 100 },
-];
-
 function format(value) {
   const number = Number(value);
   return Number.isFinite(number) ? number.toFixed(2) : '—';
@@ -188,7 +185,7 @@ function Reveal({ children, className = '', delay = 0, as: Tag = 'div', ...props
 
 function App() {
   const [page, setPage] = useState('home');
-  const [dark, setDark] = useState(false);
+  const [tourStep, setTourStep] = useState(null);
   const [images, setImages] = useState([]);
   const [selected, setSelected] = useState([]);
   const [compare, setCompare] = useState([]);
@@ -210,6 +207,7 @@ function App() {
   const fileRef = useRef();
   const toastSeq = useRef(0);
   const lastGalleryFetch = useRef('');
+  const tourTargets = useRef({});
 
   const pushToast = useCallback((kind, text) => {
     const id = ++toastSeq.current;
@@ -221,6 +219,18 @@ function App() {
   const dismissToast = useCallback(id => {
     setToasts(current => current.filter(toast => toast.id !== id));
   }, []);
+  const endTour = useCallback(() => {
+    try {
+      window.localStorage.setItem(TOUR_KEY, '1');
+    } catch {
+      /* storage unavailable — the tour just closes */
+    }
+    setTourStep(null);
+  }, []);
+  const nextTourStep = useCallback(() => {
+    setTourStep(current => (current != null && current + 1 < tourSteps.length ? current + 1 : null));
+  }, []);
+  const getTourTarget = useCallback(() => tourTargets.current[tourSteps[tourStep]?.id], [tourStep]);
   const fetchSaved = useCallback(async (options = {}) => {
     const nextPage = options.page ?? galleryPage;
     const nextQuery = options.q ?? galleryQuery;
@@ -260,6 +270,19 @@ function App() {
   };
   useEffect(() => {
     if (page === 'app') fetchDuplicates().catch(() => {});
+  }, [page]);
+  useEffect(() => {
+    if (page !== 'app') {
+      setTourStep(current => (current == null ? current : null));
+      return;
+    }
+    let seenTour = false;
+    try {
+      seenTour = Boolean(window.localStorage.getItem(TOUR_KEY));
+    } catch {
+      seenTour = false;
+    }
+    if (!seenTour) setTourStep(current => (current == null ? 0 : current));
   }, [page]);
   useEffect(() => {
     if (page !== 'app') {
@@ -370,14 +393,14 @@ function App() {
   const selectedNames = useMemo(() => (images || []).filter(i => selected.includes(i.id)), [images, selected]);
 
   return (
-    <main className={dark ? 'site dark' : 'site'}>
+    <main className="site">
       <div className="global-background" aria-hidden="true" />
       <header>
         <button className="wordmark" type="button" onClick={() => setPage('home')}>LUMEN</button>
         <nav>
           <button type="button" className={page === 'home' ? 'active' : ''} onClick={() => setPage('home')}>Home</button>
           <button type="button" className={page === 'app' ? 'active' : ''} onClick={() => setPage('app')}>Analyzer</button>
-          <button type="button" className="theme" onClick={() => setDark(!dark)} aria-label="Toggle colour theme">{dark ? 'Light' : 'Dark'}</button>
+          <button type="button" className="nav-help" onClick={() => setTourStep(0)} aria-label="Replay the guided tour" title="Replay the guided tour">?</button>
         </nav>
       </header>
       {page === 'home' ? (
@@ -410,7 +433,17 @@ function App() {
           onGallerySearch={query => { setGalleryQuery(query); setGalleryPage(0); }}
           onGallerySort={sort => { setGallerySort(sort); setGalleryPage(0); }}
           onGalleryPage={setGalleryPage}
+          tourTargets={tourTargets}
           fileRef={fileRef}
+        />
+      )}
+      {page === 'app' && tourStep != null && (
+        <GuidedTour
+          stepIndex={tourStep}
+          getTarget={getTourTarget}
+          isLast={tourStep === tourSteps.length - 1}
+          onNext={nextTourStep}
+          onClose={endTour}
         />
       )}
       {detailId != null && (
@@ -422,9 +455,13 @@ function App() {
         />
       )}
       <footer className="site-footer">
-        <div className="footer-main">
+        <div className="footer-top">
           <div className="footer-brand">
-            <span className="footer-note">LUMEN — built as a learning project</span>
+            <span className="footer-wordmark">LUMEN</span>
+            <p className="footer-tagline">
+              Image analysis, made legible — quality metrics, channel statistics, histograms,
+              dominant colours, and exact-hash duplicate detection, through a CLI, a REST API, and this dashboard.
+            </p>
             <a
               className="footer-how"
               href="https://github.com/PIYUSH-NEXTGEN/LUMEN#project-layout"
@@ -434,19 +471,29 @@ function App() {
               How it works →
             </a>
           </div>
-          <nav className="footer-links" aria-label="Project links">
-            <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN" target="_blank" rel="noopener noreferrer"><GitHubIcon />GitHub</a>
-            <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN#readme" target="_blank" rel="noopener noreferrer"><BookIcon />Docs / README</a>
-            <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">License</a>
-            <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN/issues" target="_blank" rel="noopener noreferrer"><FlagIcon />Report an issue / Contribute</a>
-          </nav>
-        </div>
-        <div className="footer-meta">
-          <div className="footer-stack" aria-label="Built with">
-            <span className="stack-badge">React</span>
-            <span className="stack-badge">FastAPI</span>
-            <span className="stack-badge">PostgreSQL</span>
+          <div className="footer-cols">
+            <nav className="footer-col" aria-label="Project links">
+              <h4>Project</h4>
+              <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN" target="_blank" rel="noopener noreferrer"><GitHubIcon />GitHub</a>
+              <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN#readme" target="_blank" rel="noopener noreferrer"><BookIcon />Docs / README</a>
+              <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">License</a>
+              <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN/issues" target="_blank" rel="noopener noreferrer"><FlagIcon />Report an issue / Contribute</a>
+            </nav>
+            <div className="footer-col">
+              <h4>Built with</h4>
+              <div className="footer-stack">
+                <span className="stack-badge">React</span>
+                <span className="stack-badge">FastAPI</span>
+                <span className="stack-badge">PostgreSQL</span>
+              </div>
+              <p className="footer-col-note">
+                Core analysis runs on NumPy &amp; Pillow. Results persist to CSV, JSON, or PostgreSQL.
+              </p>
+            </div>
           </div>
+        </div>
+        <div className="footer-bottom">
+          <span>LUMEN — built as a learning project</span>
           <span>© 2026</span>
         </div>
       </footer>
@@ -518,11 +565,82 @@ function Home({ openApp }) {
   );
 }
 
+// First-visit guided tour: a spotlight overlay walking through the four
+// key Analyzer affordances. Dismissed state lives in localStorage; the ?
+// button in the nav replays it on demand.
+function GuidedTour({ stepIndex, getTarget, isLast, onNext, onClose }) {
+  const step = tourSteps[stepIndex];
+  const cardRef = useRef(null);
+  const [rect, setRect] = useState(null);
+
+  useLayoutEffect(() => {
+    const update = () => {
+      const el = getTarget();
+      if (!el) return;
+      const box = el.getBoundingClientRect();
+      setRect({ top: box.top, left: box.left, width: box.width, height: box.height });
+    };
+    update();
+    const raf = requestAnimationFrame(update);
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', update);
+      window.removeEventListener('scroll', update, true);
+    };
+  }, [getTarget, stepIndex]);
+
+  useEffect(() => {
+    const onKey = event => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    cardRef.current?.querySelector('.primary')?.focus();
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose, stepIndex]);
+
+  if (!rect) return null;
+  const view = { width: window.innerWidth, height: window.innerHeight };
+  const fitsBelow = view.height - (rect.top + rect.height) >= 210;
+  const left = Math.min(Math.max(12, rect.left), Math.max(12, view.width - 344));
+  const cardStyle = fitsBelow
+    ? { top: Math.min(rect.top + rect.height + 14, view.height - 180), left }
+    : { bottom: Math.max(12, view.height - rect.top + 14), left };
+
+  return (
+    <>
+      <div className="tour-backdrop" onClick={onClose} role="presentation" aria-hidden="true" />
+      <div
+        className="tour-spotlight"
+        aria-hidden="true"
+        style={{ top: rect.top - 6, left: rect.left - 6, width: rect.width + 12, height: rect.height + 12 }}
+      />
+      <div ref={cardRef} className="tour-card" style={cardStyle} role="dialog" aria-label={`Guided tour: ${step.title}`}>
+        <p className="tour-step">STEP {stepIndex + 1} OF {tourSteps.length}</p>
+        <h3>{step.title}</h3>
+        <p>{step.text}</p>
+        <div className="tour-dots" aria-hidden="true">
+          {tourSteps.map((entry, index) => (
+            <i key={entry.id} className={index === stepIndex ? 'active' : ''} />
+          ))}
+        </div>
+        <div className="tour-actions">
+          <button type="button" className="text-button" onClick={onClose}>Skip tour</button>
+          <button type="button" className="primary" onClick={isLast ? onClose : onNext}>
+            {isLast ? 'Got it' : 'Next'} <span>→</span>
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 function Analyzer(props) {
   const {
     file, preview, report, loading, gallery, selected, compare, duplicates,
     selectedNames, pickFile, analyze, toggle, runCompare, openDetail,
-    deleteImage, refreshSaved, onGallerySearch, onGallerySort, onGalleryPage, fileRef,
+    deleteImage, refreshSaved, onGallerySearch, onGallerySort, onGalleryPage, tourTargets, fileRef,
   } = props;
 
   return (
@@ -538,6 +656,7 @@ function Analyzer(props) {
           role="button"
           tabIndex={0}
           aria-label="Choose an image to analyze"
+          ref={el => { tourTargets.current.upload = el; }}
           onClick={() => fileRef.current.click()}
           onKeyDown={event => {
             if (event.key === 'Enter' || event.key === ' ') {
@@ -573,7 +692,7 @@ function Analyzer(props) {
               <p>Results are saved through the API and available for metric comparison below.</p>
             </>
           )}
-          <button type="button" className="primary" disabled={!file || loading} onClick={analyze}>
+          <button type="button" className="primary" disabled={!file || loading} onClick={analyze} ref={el => { tourTargets.current.analyze = el; }}>
             {loading ? 'Working…' : 'Analyze & save'} <span>→</span>
           </button>
         </div>
@@ -613,7 +732,7 @@ function Analyzer(props) {
             ? `${selected.length} selected — ${selectedNames.map(i => i.filename).join(', ')}`
             : 'Click a card to view full stats. Select two or more to compare.'}
         </p>
-        <div className={`gallery${gallery.loading && gallery.items.length ? ' is-refreshing' : ''}`}>
+        <div className={`gallery${gallery.loading && gallery.items.length ? ' is-refreshing' : ''}`} ref={el => { tourTargets.current.gallery = el; }}>
           {gallery.items.map((image, index) => (
             <GalleryCard
               key={image.id}
@@ -655,7 +774,7 @@ function Analyzer(props) {
             </button>
           </div>
         )}
-        <div className="compare-action">
+        <div className="compare-action" ref={el => { tourTargets.current.compare = el; }}>
           <button type="button" className="primary" disabled={selected.length < 2 || loading} onClick={runCompare}>
             Compare selected <span>→</span>
           </button>
@@ -785,28 +904,6 @@ function StatCard({ label, value, max, delay, info }) {
   );
 }
 
-function ProfileChart({ report }) {
-  return (
-    <div className="profile-chart-wrap" role="img" aria-label="Image quality profile chart">
-      <div className="profile-chart">
-        {profileMetrics.map(metric => {
-          const value = Number(report[metric.key]) || 0;
-          const height = normalizePercent(value, metric.max);
-          return (
-            <div className="profile-group" key={metric.key}>
-              <div className="profile-bars">
-                <i style={{ height: `${height}%` }} title={`${metric.label}: ${format(value)}`} />
-              </div>
-              <span>{metric.label}</span>
-            </div>
-          );
-        })}
-      </div>
-      <p className="chart-caption">Each bar is scaled to a typical maximum for that metric.</p>
-    </div>
-  );
-}
-
 function Report({ report, inModal = false }) {
   const [height, width] = report.image_stats?.shape || [];
   const channelEntries = Object.entries(report.channel_stats || {});
@@ -834,7 +931,6 @@ function Report({ report, inModal = false }) {
       <h2 title={report.filename}>{report.filename}</h2>
       <section className="report-section">
         <h3>Overview</h3>
-        <ProfileChart report={report} />
         <div className="stat-grid">
           {statTiles.map((tile, index) => (
             <StatCard

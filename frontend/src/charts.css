@@ -219,40 +219,6 @@
   margin: 11px 0 !important;
 }
 
-.dark .channel-chart {
-  border-color: rgba(255, 255, 255, 0.14);
-}
-
-.dark .channel-chart-groups,
-.dark .compare-bars {
-  background: repeating-linear-gradient(to bottom, transparent 0, transparent 49%, rgba(255, 255, 255, 0.08) 50%, transparent 51%, transparent 99%);
-}
-
-.dark .compare-chart-wrap {
-  border-color: rgba(255, 255, 255, 0.14);
-}
-
-.dark .dominant-bar > div {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.dark .chart-axis,
-.dark .channel-bar-wrap span,
-.dark .channel-chart-group > strong,
-.dark .dominant-bar b,
-.dark .compare-group > span,
-.dark .chart-caption {
-  color: #c5bcb4 !important;
-}
-
-.dark .compare-bars {
-  border-color: rgba(255, 255, 255, 0.14);
-}
-
-.dark .compare-bars i.is-best {
-  outline-color: #f1ede8;
-}
-
 @media (max-width: 480px) {
   .dominant-bar {
     grid-template-columns: 55px 1fr 36px;

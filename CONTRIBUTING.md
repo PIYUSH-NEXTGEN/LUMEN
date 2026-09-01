@@ -61,7 +61,7 @@ If you have [ruff](https://github.com/astral-sh/ruff) installed, `ruff check .` 
 
 - **Function components and hooks only** — no class components (the one exception is the top-level `ErrorBoundary`, which React requires to be a class), no new UI libraries.
 - Components currently live in `frontend/src/main.jsx`; keep new components there unless the file is being deliberately split.
-- Styles are plain CSS in `styles.css` / `charts.css` with kebab-case class names. Every visual addition needs both **light and dark** (`.site.dark`) variants where colours are involved, and should respect `prefers-reduced-motion` for animations.
+- Styles are plain CSS in `styles.css` / `charts.css` with kebab-case class names. The frontend is light-theme only (dark mode was removed by design), and animations should respect `prefers-reduced-motion`.
 - Keep user-facing strings plain-English and friendly; metric explanations should avoid jargon (see `metricDescriptions` in `main.jsx` for the established tone).
 
 ### Commits
