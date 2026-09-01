@@ -5,7 +5,7 @@ import config
 from PIL import Image as PILImage
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-
+from PIL import UnidentifiedImageError
 
 
 from image_analyzer.database.connection import SessionLocal
@@ -63,7 +63,11 @@ def fetch_images():
 @app.post("/analyze", response_model=ImageReport)
 async def analyze_image(file: UploadFile = File(...), save_db: bool = False):
     contents = await file.read()
-    pil_image = PILImage.open(io.BytesIO(contents)).convert("RGB")
+    try:
+        pil_image = PILImage.open(io.BytesIO(contents)).convert("RGB")
+    except UnidentifiedImageError:
+        raise HTTPException(status_code=400, detail="Uploaded file is not a valid image")
+
     arr = np.array(pil_image)
 
     img_stats = image_stats(arr)
@@ -149,7 +153,11 @@ def get_histogram(image_id: int):
 
 @app.get("/compare")
 def compare_images(ids: str):
-    image_ids = [int(i) for i in ids.split(",")]
+
+    try:
+        image_ids = [int(i) for i in ids.split(",")]
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid image IDs ids must be a comma-separated list of integers, e.g. ids=1,2,3")
 
     session = SessionLocal()
     try:
