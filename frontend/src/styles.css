@@ -1,4 +1,25 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono&family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;0,800;1,700;1,800&family=Shippori+Mincho:wght@700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono&family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;0,800;1,700;1,800&family=Shippori+Mincho:wght@700;800&family=Zen+Kaku+Gothic+New:wght@700;800;900&family=Noto+Serif+JP:wght@700;800;900&display=swap');
+/* Local brush-style Japanese display font (Katsuno Japan Demo by Yoga Letter,
+   1001Fonts FFP — free for personal use only; commercial use requires the
+   author's permission / $15 license. Demo charset is Latin letters + accents
+   only, so digits/punctuation and IJ/Devanagari fall back to Noto Serif JP).
+   The weight range (100-900) makes the browser use the only existing cut
+   at ANY requested weight WITHOUT synthetic bolding, keeping the brush
+   strokes clean at heading sizes. */
+@font-face {
+  font-family: 'Katsuno Japan';
+  src: url('/fonts/katsuno-japan-demo.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Katsuno Japan';
+  src: url('/fonts/katsuno-japan-italic-demo.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
 
 /* Global Reset & Base Setup */
 * {
@@ -7,13 +28,22 @@
 
 :root {
   font-family: 'DM Sans', Arial, sans-serif;
-  color: #231E1B;
+  color: #000000;
   line-height: 1.5;
   font-weight: 400;
-  background-color: #f7f3ed;
+  background-color: #ffffff;
 }
 
-/* Single Continuous Canvas Background Layer (Untouched) */
+/* Headings use a brush-stroked, Asian-style display font (Latin + CJK).
+   Individual component rules below can override the family without
+   changing the stack. */
+h1,
+h2,
+h3 {
+  font-family: 'Katsuno Japan', 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+}
+
+/* Solid White Canvas Background Layer */
 .global-background {
   position: fixed;
   inset: 0;
@@ -21,18 +51,14 @@
   height: 100vh;
   z-index: -1;
   pointer-events: none;
-  background-image: url('/background-artwork.jpg');
-  background-repeat: no-repeat;
-  background-size: cover;
-  background-position: center 30%;
-  filter: contrast(0.98) brightness(0.98);
+  background-color: #ffffff;
 }
 
 .global-background::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: rgba(250, 245, 238, 0.42);
+  background: rgba(255, 255, 255, 0.42);
   transition: background 0.3s ease;
 }
 
@@ -40,8 +66,62 @@
   position: relative;
   min-height: 100vh;
   background: transparent !important;
-  color: #231E1B;
+  color: #000000;
   transition: color 0.25s ease;
+}
+
+/* Ambient decorative layer: up to five petals/leaves drift down the viewport.
+   Rendered after .global-background (both fixed at z-index:-1), so it paints
+   above the artwork wash but below every interactive element. Motion is
+   transform-only (translateY fall on .petal, rotate spin on .leaf), which the
+   compositor handles cheaply — no JS animation loop, no layout thrash. */
+.petal-scene {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.petal {
+  position: absolute;
+  top: -60px;
+  left: var(--x);
+  opacity: var(--op, 0.75);
+  animation: petal-fall var(--dur) linear var(--delay) infinite;
+  will-change: transform;
+}
+
+.petal .leaf {
+  display: block;
+  width: 1em;
+  height: 0.58em;
+  background:
+    linear-gradient(135deg, hsl(var(--hue) 82% 78%), hsl(var(--hue) 72% 66%));
+  border-radius: 100% 4% 100% 4%;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4),
+    0 1px 4px rgba(120, 60, 20, 0.18);
+  animation: petal-spin var(--rdur) linear infinite;
+  animation-direction: var(--rdir, normal);
+}
+
+@keyframes petal-fall {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(var(--sway, 0px), 108vh, 0);
+  }
+}
+
+@keyframes petal-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Base Typography & Controls */
@@ -63,7 +143,7 @@ select:focus-visible,
 }
 
 .upload-box:focus-visible {
-  border-color: #1A1513;
+  border-color: #000000;
 }
 
 header {
@@ -74,23 +154,28 @@ header {
   align-items: center;
   justify-content: space-between;
   padding: 0 28px;
-  border-bottom: 1px solid rgba(35, 30, 27, 0.18);
-  background: rgba(245, 241, 232, 0.68);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.18);
+  background: rgba(255, 255, 255, 0.68);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-radius: 0 0 10px 10px;
 }
 
 .wordmark {
+  border: 0;
+  background: none;
+  padding: 0;
+  line-height: 1;
+  color: #000000;
+}
+
+.wordmark-stack {
+  display: inline-block;
   font-family: 'Playfair Display', Georgia, serif;
   font-style: italic;
   font-weight: 800;
   font-size: 1.9rem;
-  border: 0;
-  background: none;
-  line-height: 1;
   letter-spacing: 0.08em;
-  color: #1A1513;
 }
 
 nav {
@@ -100,6 +185,7 @@ nav {
 }
 
 nav button,
+nav a,
 .text-button {
   background: none;
   border: 0;
@@ -109,10 +195,12 @@ nav button,
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #231E1B;
+  text-decoration: none;
+  color: #000000;
 }
 
-nav button:not(.theme)::after,
+nav button::after,
+nav a::after,
 .text-button::after {
   content: '';
   height: 2px;
@@ -120,11 +208,12 @@ nav button:not(.theme)::after,
   position: absolute;
   bottom: -2px;
   left: 0;
-  background: #1A1513;
+  background: #000000;
   transition: width 0.2s ease;
 }
 
 nav button:hover::after,
+nav a:hover::after,
 nav .active::after,
 .text-button:hover::after {
   width: 100%;
@@ -134,10 +223,10 @@ nav .active::after,
   width: 30px;
   height: 30px;
   padding: 0;
-  border: 1px solid rgba(35, 30, 27, 0.25);
+  border: 1px solid rgba(0, 0, 0, 0.25);
   border-radius: 50%;
-  background: rgba(245, 241, 232, 0.6);
-  color: #1A1513;
+  background: rgba(255, 255, 255, 0.6);
+  color: #000000;
   font-weight: 800;
   font-size: 0.9rem;
   line-height: 1;
@@ -145,9 +234,9 @@ nav .active::after,
 }
 
 .nav-help:hover {
-  background: #1A1513;
-  color: #F5F1E8;
-  border-color: #1A1513;
+  background: #000000;
+  color: #ffffff;
+  border-color: #000000;
 }
 
 /* Hero Section */
@@ -163,14 +252,14 @@ nav .active::after,
   font-size: 0.68rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #6B3012;
+  color: #000000;
   font-weight: 700;
   margin: 0 0 16px;
 }
 
 .hero h1 {
-  font-size: clamp(5.5rem, 15vw, 10rem);
-  line-height: 0.85;
+  font-size: clamp(3.4rem, 9vw, 6rem);
+  line-height: 1.08;
   margin: 0;
 }
 
@@ -179,86 +268,78 @@ nav .active::after,
   display: inline-grid;
   place-items: center;
   width: 100%;
-  min-height: 1.05em;
+  min-height: 1.12em;
 }
 
 .brand-text {
   grid-area: 1 / 1;
   display: inline-block;
   white-space: nowrap;
-  letter-spacing: 0.075em;
-  color: #1A1513;
-  text-shadow: 0 4px 24px rgba(250, 245, 238, 0.6);
-  will-change: opacity, transform, filter;
+  letter-spacing: 0.04em;
+  color: #000000;
+  text-shadow: 0 4px 24px rgba(255, 255, 255, 0.6);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.brand-text.is-active {
+  opacity: 1;
 }
 
 .brand-en {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-style: italic;
-  font-weight: 800;
-  animation: heroBrandEN 10s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  font-family: 'Katsuno Japan', 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  font-weight: 400;
 }
 
 .brand-ja {
   font-family: 'Shippori Mincho', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
   font-weight: 800;
   letter-spacing: 0.12em;
+}
+
+.brand-hi {
+  font-family: 'Noto Sans Devanagari', 'Shippori Mincho', serif;
+  font-weight: 800;
+}
+
+/* Each letter starts hidden and fades in one at a time (55ms stagger) the
+   moment its word becomes active, so the word is spelled out character by
+   character instead of swapping as a single block. Flip out uses the same
+   stagger reversed, giving a smooth letter-by-letter crossfade per face.
+   Display times come from WORDMARK_WORDS (EN 3s -> JA 2.5s -> HI 1s). */
+.brand-letter {
+  display: inline-block;
   opacity: 0;
-  animation: heroBrandJA 10s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  transform: translateY(0.28em);
+  transition:
+    opacity 0.35s ease,
+    transform 0.35s ease;
+  transition-delay: calc(var(--i) * 55ms);
 }
 
-@keyframes heroBrandEN {
-  0%, 58% {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-    filter: blur(0px);
-  }
-  65% {
-    opacity: 0;
-    transform: scale(0.98) translateY(-4px);
-    filter: blur(4px);
-  }
-  88% {
-    opacity: 0;
-    transform: scale(0.98) translateY(4px);
-    filter: blur(4px);
-  }
-  95%, 100% {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-    filter: blur(0px);
-  }
-}
-
-@keyframes heroBrandJA {
-  0%, 60% {
-    opacity: 0;
-    transform: scale(0.98) translateY(4px);
-    filter: blur(4px);
-  }
-  68%, 86% {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-    filter: blur(0px);
-  }
-  93%, 100% {
-    opacity: 0;
-    transform: scale(0.98) translateY(-4px);
-    filter: blur(4px);
-  }
+.brand-text.is-active .brand-letter {
+  opacity: 1;
+  transform: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .brand-en {
-    animation: none !important;
+  .brand-text,
+  .brand-letter {
+    transition: none !important;
+  }
+  .brand-text.is-active,
+  .brand-text.is-active .brand-letter {
     opacity: 1 !important;
     transform: none !important;
-    filter: none !important;
   }
-  .brand-ja {
-    animation: none !important;
-    opacity: 0 !important;
-    display: none !important;
+  .petal-scene {
+    animation: petal-fade-hide 0.4s ease forwards;
+  }
+  @keyframes petal-fade-hide {
+    to {
+      opacity: 0;
+    }
   }
 }
 
@@ -266,7 +347,7 @@ nav .active::after,
   font-size: 1.15rem;
   max-width: 620px;
   margin: 30px auto;
-  color: #3B332E;
+  color: #000000;
   font-weight: 600;
   line-height: 1.55;
 }
@@ -274,22 +355,22 @@ nav .active::after,
 /* Primary Button - Sleek Dark Ink Pill */
 .primary {
   border: 0;
-  background: #1A1513;
-  color: #F5F1E8;
+  background: #000000;
+  color: #ffffff;
   padding: 13px 24px;
   margin-top: 24px;
   font-weight: 600;
   font-size: 0.9rem;
   letter-spacing: 0.04em;
   border-radius: 999px;
-  box-shadow: 0 4px 14px rgba(26, 21, 19, 0.2);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
   transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .primary:hover {
   background: #000000;
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(26, 21, 19, 0.3);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
 }
 
 .primary:disabled {
@@ -321,11 +402,12 @@ nav .active::after,
 .section-head h2,
 .limitations h2,
 .workspace-section h2 {
-  font-size: clamp(1.8rem, 3.2vw, 2.5rem);
-  letter-spacing: -0.04em;
-  color: #1A1513;
+  font-size: clamp(1.45rem, 2.5vw, 2rem);
+  letter-spacing: 0;
+  line-height: 1.25;
+  color: #000000;
   margin: 0;
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'Katsuno Japan', 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
   font-weight: 800;
 }
 
@@ -340,27 +422,27 @@ nav .active::after,
 .analysis-card,
 .image-card,
 .comparison {
-  border: 1px solid rgba(107, 48, 18, 0.18);
-  background: #F7EEDD;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  background: #ffffff;
   border-radius: 10px;
-  box-shadow: 0 4px 16px rgba(35, 30, 27, 0.06);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
 }
 
 .feature {
-  border: 1px solid rgba(107, 48, 18, 0.18);
-  background: #F7EEDD;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  background: #ffffff;
   border-radius: 12px;
   padding: 28px;
   min-height: 215px;
-  box-shadow: 0 4px 18px rgba(35, 30, 27, 0.06);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
   transition: transform 0.25s ease, border-color 0.25s ease, background-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .feature:hover {
   transform: translateY(-4px);
-  border-color: rgba(107, 48, 18, 0.55);
-  background: #FAF4E6;
-  box-shadow: 0 8px 24px rgba(35, 30, 27, 0.12);
+  border-color: rgba(0, 0, 0, 0.55);
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
 /* Japanese Editorial Stamp Number Badge */
@@ -371,25 +453,26 @@ nav .active::after,
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: rgba(107, 48, 18, 0.12);
+  background: rgba(0, 0, 0, 0.12);
   color: #6B3012;
   font-family: 'DM Mono', monospace;
   font-size: 0.72rem;
   font-weight: 700;
-  border: 1px solid rgba(107, 48, 18, 0.3);
+  border: 1px solid rgba(0, 0, 0, 0.3);
   letter-spacing: 0.02em;
 }
 
 .feature h3 {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: 1.18rem;
+  font-family: 'Katsuno Japan', 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  font-size: 1.02rem;
   font-weight: 800;
-  color: #1A1513;
-  margin: 24px 0 8px;
+  line-height: 1.25;
+  color: #000000;
+  margin: 20px 0 8px;
 }
 
 .feature p {
-  color: #3B332E;
+  color: #000000;
   font-size: 0.92rem;
   margin: 0;
   line-height: 1.5;
@@ -400,23 +483,24 @@ nav .active::after,
 /* Solid Editorial Section Panels */
 .limitations {
   padding: 60px max(28px, calc((100% - 1124px) / 2));
-  background: #EFE5D3;
-  border: 1px solid rgba(107, 48, 18, 0.22);
+  scroll-margin-top: 20px;
+  background: #f7f7f7;
+  border: 1px solid rgba(0, 0, 0, 0.22);
   border-radius: 12px;
   margin-top: 50px;
-  box-shadow: 0 4px 20px rgba(35, 30, 27, 0.06);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
 }
 
 .limitations h2 {
   margin-bottom: 24px;
-  color: #1A1513;
+  color: #000000;
 }
 
 .limitations ul {
   list-style: none;
   padding-left: 0;
   max-width: 780px;
-  color: #3B332E;
+  color: #000000;
 }
 
 .limitations li {
@@ -427,19 +511,19 @@ nav .active::after,
   gap: 12px;
   font-size: 0.96rem;
   font-weight: 500;
-  color: #3B332E;
+  color: #000000;
 }
 
 .limitations li::before {
   content: '—';
-  color: #6B3012;
+  color: #000000;
   font-weight: 800;
   font-family: 'DM Mono', monospace;
 }
 
 .portfolio-note {
   margin-top: 30px;
-  color: #6B3012;
+  color: #000000;
   font-weight: 700;
 }
 
@@ -455,13 +539,13 @@ nav .active::after,
 }
 
 .app-intro h1 {
-  font-size: clamp(2.5rem, 5vw, 4.5rem);
-  letter-spacing: -0.06em;
-  line-height: 1.05;
-  color: #1A1513;
+  font-size: clamp(1.9rem, 4vw, 3.2rem);
+  letter-spacing: 0;
+  line-height: 1.5;
+  color: #000000;
   margin: 0 0 20px;
   font-weight: 800;
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'Katsuno Japan', 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
 }
 
 .app-intro em {
@@ -472,7 +556,7 @@ nav .active::after,
 
 .app-intro > p:not(.eyebrow) {
   max-width: 500px;
-  color: #3B332E;
+  color: #000000;
   font-size: 1.02rem;
   font-weight: 500;
 }
@@ -494,13 +578,13 @@ nav .active::after,
   align-items: center;
   justify-content: center;
   border-style: dashed;
-  border-color: rgba(35, 30, 27, 0.3);
+  border-color: rgba(0, 0, 0, 0.3);
   transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
 .upload-box:hover {
-  border-color: #1A1513;
-  background: rgba(248, 244, 236, 0.85);
+  border-color: #000000;
+  background: rgba(255, 255, 255, 0.85);
 }
 
 .upload-box input {
@@ -509,15 +593,15 @@ nav .active::after,
 
 .upload-symbol {
   font-size: 2rem;
-  color: #1A1513;
+  color: #000000;
   font-weight: 700;
 }
 
 .upload-box h2,
 .analysis-card h2 {
-  font-size: 1.25rem;
-  font-family: 'Playfair Display', Georgia, serif;
-  color: #1A1513;
+  font-size: 1.08rem;
+  font-family: 'Katsuno Japan', 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  color: #000000;
   font-weight: 800;
   margin: 13px 0 5px;
 }
@@ -525,20 +609,33 @@ nav .active::after,
 .upload-box p,
 .analysis-card > p {
   margin: 0;
-  color: #4A413A;
+  color: #000000;
   font-size: 0.92rem;
   font-weight: 500;
 }
 
-.upload-box img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0.18;
-  z-index: 0;
+/* Uploaded image preview: fully visible and compact at every screen size.
+   It is an in-flow, contained image (object-fit: contain + max-height), so
+   the entire image is always shown — never cropped by a cover crop, and
+   never blown up to full size on mobile. */
+.upload-box .upload-preview {
+  display: block;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  max-height: 240px;
+  width: auto;
+  height: auto;
+  aspect-ratio: auto;
+  object-fit: contain;
+  object-position: center;
   border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.55);
+  margin-top: 18px;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .upload-box > *:not(img) {
@@ -554,10 +651,10 @@ nav .active::after,
 }
 
 .report h2 {
-  font-size: 1.1rem;
-  font-family: 'Playfair Display', Georgia, serif;
-  color: #1A1513;
-  font-weight: 800;
+  font-size: 0.95rem;
+  font-family: 'DM Sans', 'Noto Serif JP', sans-serif;
+  font-weight: 600;
+  color: #000000;
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
@@ -565,7 +662,7 @@ nav .active::after,
 }
 
 .report-section {
-  border-top: 1px solid rgba(35, 30, 27, 0.14);
+  border-top: 1px solid rgba(0, 0, 0, 0.14);
   padding: 16px 0;
 }
 
@@ -574,7 +671,7 @@ nav .active::after,
   font-size: 0.68rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #6B3012;
+  color: #000000;
   margin: 0 0 12px;
   font-weight: 700;
 }
@@ -586,7 +683,7 @@ nav .active::after,
 
 .metric-list div {
   padding: 8px 0;
-  border-bottom: 1px solid rgba(35, 30, 27, 0.14);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.14);
   display: flex;
   justify-content: space-between;
   gap: 5px;
@@ -594,14 +691,14 @@ nav .active::after,
 }
 
 .metric-list span {
-  color: #4A413A;
+  color: #000000;
   font-weight: 500;
 }
 
 .metric-list strong {
   font-family: 'Playfair Display', Georgia, serif;
   font-size: 0.9rem;
-  color: #1A1513;
+  color: #000000;
   font-weight: 800;
   text-align: right;
 }
@@ -614,8 +711,8 @@ nav .active::after,
 
 .channel {
   padding: 10px;
-  border-left: 3px solid #1A1513;
-  background: #EFE5D3;
+  border-left: 3px solid #000000;
+  background: #f7f7f7;
   border-radius: 4px;
 }
 
@@ -623,7 +720,7 @@ nav .active::after,
   margin: 0 0 7px;
   text-transform: capitalize;
   font-size: 0.76rem;
-  color: #1A1513;
+  color: #000000;
   font-weight: 700;
 }
 
@@ -632,13 +729,13 @@ nav .active::after,
   justify-content: space-between;
   gap: 3px;
   margin: 4px 0;
-  color: #4A413A;
+  color: #000000;
   font-size: 0.67rem;
   font-weight: 500;
 }
 
 .channel strong {
-  color: #1A1513;
+  color: #000000;
   font-weight: 800;
 }
 
@@ -654,7 +751,7 @@ nav .active::after,
   align-items: center;
   text-transform: capitalize;
   font-size: 0.7rem;
-  color: #1A1513;
+  color: #000000;
   font-weight: 600;
 }
 
@@ -662,7 +759,7 @@ nav .active::after,
   height: 11px;
   display: flex;
   overflow: hidden;
-  background: rgba(35, 30, 27, 0.12);
+  background: rgba(0, 0, 0, 0.12);
   border-radius: 2px;
 }
 
@@ -672,7 +769,7 @@ nav .active::after,
 }
 
 .hist-dark {
-  background: #1A1513;
+  background: #000000;
 }
 
 .hist-mid {
@@ -686,14 +783,14 @@ nav .active::after,
 .histogram-row small {
   font-family: 'DM Mono', monospace;
   font-size: 0.6rem;
-  color: #4A413A;
+  color: #000000;
   text-align: right;
   font-weight: 500;
 }
 
 .histogram-key {
   font-size: 0.64rem;
-  color: #4A413A;
+  color: #000000;
   margin: 8px 0 0;
   font-weight: 500;
 }
@@ -716,7 +813,7 @@ nav .active::after,
   width: 26px;
   height: 26px;
   flex: 0 0 26px;
-  border: 1px solid rgba(35, 30, 27, 0.2);
+  border: 1px solid rgba(0, 0, 0, 0.2);
   border-radius: 3px;
 }
 
@@ -734,14 +831,14 @@ nav .active::after,
 
 .color-item strong {
   font-size: 0.72rem;
-  color: #1A1513;
+  color: #000000;
   font-weight: 700;
 }
 
 .color-item small {
   font-family: 'DM Mono', monospace;
   font-size: 0.6rem;
-  color: #4A413A;
+  color: #000000;
   font-weight: 500;
 }
 
@@ -763,10 +860,10 @@ nav .active::after,
   gap: 10px;
   padding: 12px 12px 12px 14px;
   border-radius: 8px;
-  border: 1px solid rgba(107, 48, 18, 0.25);
-  background: #F7EEDD;
-  color: #1A1513;
-  box-shadow: 0 10px 30px rgba(26, 21, 19, 0.22);
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  background: #ffffff;
+  color: #000000;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
   font-size: 0.86rem;
   font-weight: 600;
   animation: toast-in 0.25s cubic-bezier(0.22, 1, 0.36, 1);
@@ -791,13 +888,13 @@ nav .active::after,
   background: none;
   font-size: 1rem;
   line-height: 1;
-  color: #4A413A;
+  color: #000000;
   padding: 0 2px;
   border-radius: 4px;
 }
 
 .toast-close:hover {
-  color: #1A1513;
+  color: #000000;
 }
 
 @keyframes toast-in {
@@ -812,7 +909,7 @@ nav .active::after,
 .skeleton {
   position: relative;
   overflow: hidden;
-  background: rgba(35, 30, 27, 0.09);
+  background: rgba(0, 0, 0, 0.09);
   border-radius: 4px;
 }
 
@@ -862,10 +959,10 @@ nav .active::after,
   font: inherit;
   font-size: 0.86rem;
   padding: 9px 12px;
-  border: 1px solid rgba(107, 48, 18, 0.25);
+  border: 1px solid rgba(0, 0, 0, 0.25);
   border-radius: 8px;
-  background: rgba(247, 238, 221, 0.8);
-  color: #1A1513;
+  background: rgba(255, 255, 255, 0.8);
+  color: #000000;
 }
 
 .gallery-search { flex: 1 1 220px; max-width: 340px; }
@@ -888,7 +985,7 @@ nav .active::after,
 .page-status {
   font-family: 'DM Mono', monospace;
   font-size: 0.68rem;
-  color: #4A413A;
+  color: #000000;
   font-weight: 600;
   letter-spacing: 0.05em;
 }
@@ -901,21 +998,21 @@ nav .active::after,
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  border-bottom: 1px solid rgba(35, 30, 27, 0.16);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.16);
   padding-bottom: 18px;
 }
 
 .section-line small {
   font-size: 0.75rem;
   letter-spacing: 0;
-  color: #4A413A;
+  color: #000000;
   font-weight: 500;
   margin-left: 10px;
 }
 
 .selection-note {
   font-size: 0.88rem;
-  color: #3B332E;
+  color: #000000;
   margin: 18px 0;
   font-weight: 500;
 }
@@ -954,7 +1051,7 @@ nav .active::after,
   top: 12px;
   width: 28px;
   height: 28px;
-  border: 1px solid rgba(35, 30, 27, 0.2);
+  border: 1px solid rgba(0, 0, 0, 0.2);
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.85);
   display: grid;
@@ -977,7 +1074,7 @@ nav .active::after,
 
 .card-delete:hover {
   opacity: 1;
-  border-color: rgba(107, 48, 18, 0.5);
+  border-color: rgba(0, 0, 0, 0.5);
 }
 
 .card-select.checkbox {
@@ -986,12 +1083,12 @@ nav .active::after,
   top: 12px;
   width: 20px;
   height: 20px;
-  border: 1px solid rgba(35, 30, 27, 0.35);
+  border: 1px solid rgba(0, 0, 0, 0.35);
   text-align: center;
   font-size: 0.78rem;
   line-height: 18px;
   background: #fff;
-  color: #1A1513;
+  color: #000000;
   border-radius: 3px;
   font-weight: 700;
   padding: 0;
@@ -1001,7 +1098,7 @@ nav .active::after,
 .card-dimensions {
   font-family: 'DM Mono', monospace;
   font-size: 0.65rem !important;
-  color: #6B3012 !important;
+  color: #000000 !important;
   margin-top: 6px !important;
 }
 
@@ -1016,8 +1113,8 @@ nav .active::after,
   font-size: 0.65rem;
   padding: 3px 7px;
   border-radius: 999px;
-  background: rgba(107, 48, 18, 0.1);
-  color: #3B332E;
+  background: rgba(0, 0, 0, 0.1);
+  color: #000000;
   font-weight: 600;
 }
 
@@ -1031,18 +1128,18 @@ nav .active::after,
 .color-strip-swatch {
   flex: 1;
   border-radius: 2px;
-  border: 1px solid rgba(35, 30, 27, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.15);
   min-width: 0;
 }
 
 .image-card:hover {
   transform: translateY(-3px);
-  border-color: rgba(35, 30, 27, 0.4);
-  background: rgba(248, 244, 236, 0.88);
+  border-color: rgba(0, 0, 0, 0.4);
+  background: rgba(255, 255, 255, 0.88);
 }
 
 .image-card.selected {
-  border: 2px solid #1A1513;
+  border: 2px solid #000000;
   padding: 17px;
 }
 
@@ -1052,20 +1149,20 @@ nav .active::after,
   top: 12px;
   width: 20px;
   height: 20px;
-  border: 1px solid rgba(35, 30, 27, 0.35);
+  border: 1px solid rgba(0, 0, 0, 0.35);
   text-align: center;
   font-size: 0.78rem;
   line-height: 18px;
   background: #fff;
-  color: #1A1513;
+  color: #000000;
   border-radius: 3px;
   font-weight: 700;
 }
 
 .selected .checkbox {
-  background: #1A1513;
-  color: #F5F1E8;
-  border-color: #1A1513;
+  background: #000000;
+  color: #ffffff;
+  border-color: #000000;
 }
 
 .file-mark {
@@ -1073,8 +1170,8 @@ nav .active::after,
   height: 40px;
   display: grid;
   place-items: center;
-  background: rgba(238, 230, 218, 0.85);
-  color: #1A1513;
+  background: #efefef;
+  color: #000000;
   font-family: 'Playfair Display', Georgia, serif;
   font-style: italic;
   font-weight: 800;
@@ -1084,10 +1181,10 @@ nav .active::after,
 }
 
 .image-card h3 {
-  font-size: 0.94rem;
-  font-family: 'Playfair Display', Georgia, serif;
-  color: #1A1513;
-  font-weight: 800;
+  font-size: 0.84rem;
+  font-family: 'DM Sans', 'Noto Serif JP', sans-serif;
+  font-weight: 600;
+  color: #000000;
   margin: 20px 0 4px;
   white-space: nowrap;
   overflow: hidden;
@@ -1097,7 +1194,7 @@ nav .active::after,
 .image-card p {
   font-family: 'DM Mono', monospace;
   font-size: 0.67rem;
-  color: #4A413A;
+  color: #000000;
   margin: 0;
   font-weight: 500;
 }
@@ -1108,7 +1205,7 @@ nav .active::after,
   gap: 3px;
   margin-top: 16px;
   font-size: 0.7rem;
-  color: #3B332E;
+  color: #000000;
   font-weight: 500;
 }
 
@@ -1162,7 +1259,7 @@ nav .active::after,
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: rgba(26, 21, 19, 0.55);
+  background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: flex-start;
@@ -1176,11 +1273,11 @@ nav .active::after,
   width: min(720px, 100%);
   max-height: calc(100vh - 80px);
   overflow-y: auto;
-  background: #F7EEDD;
-  border: 1px solid rgba(107, 48, 18, 0.22);
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.22);
   border-radius: 12px;
   padding: 28px 24px;
-  box-shadow: 0 20px 60px rgba(26, 21, 19, 0.25);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
 }
 
 .modal-close {
@@ -1193,19 +1290,19 @@ nav .active::after,
   background: none;
   font-size: 1.6rem;
   line-height: 1;
-  color: #4A413A;
+  color: #000000;
   border-radius: 4px;
 }
 
 .modal-close:hover {
-  color: #1A1513;
-  background: rgba(35, 30, 27, 0.08);
+  color: #000000;
+  background: rgba(0, 0, 0, 0.08);
 }
 
 .modal-status {
   padding: 24px 0;
   text-align: center;
-  color: #4A413A;
+  color: #000000;
   font-weight: 500;
 }
 
@@ -1227,9 +1324,9 @@ nav .active::after,
 
 .stat-card {
   padding: 12px 14px;
-  border: 1px solid rgba(107, 48, 18, 0.14);
+  border: 1px solid rgba(0, 0, 0, 0.14);
   border-radius: 8px;
-  background: rgba(239, 229, 211, 0.5);
+  background: rgba(255, 255, 255, 0.5);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -1240,20 +1337,20 @@ nav .active::after,
   font-size: 0.62rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #6B3012;
+  color: #000000;
   font-weight: 700;
 }
 
 .stat-value {
   font-family: 'Playfair Display', Georgia, serif;
   font-size: 1rem;
-  color: #1A1513;
+  color: #000000;
   font-weight: 800;
 }
 
 .stat-bar {
   height: 4px;
-  background: rgba(35, 30, 27, 0.1);
+  background: rgba(0, 0, 0, 0.1);
   border-radius: 2px;
   overflow: hidden;
   margin-top: 4px;
@@ -1274,7 +1371,7 @@ nav .active::after,
   height: 14px;
   margin-left: 6px;
   padding: 0;
-  border: 1px solid rgba(107, 48, 18, 0.4);
+  border: 1px solid rgba(0, 0, 0, 0.4);
   border-radius: 50%;
   background: transparent;
   color: #6B3012;
@@ -1298,8 +1395,8 @@ nav .active::after,
   width: max-content;
   max-width: 230px;
   padding: 8px 10px;
-  background: #1A1513;
-  color: #F5F1E8;
+  background: #000000;
+  color: #ffffff;
   font-family: 'DM Sans', Arial, sans-serif;
   font-size: 0.72rem;
   font-weight: 500;
@@ -1355,9 +1452,9 @@ table {
 th,
 td {
   padding: 12px 14px;
-  border-bottom: 1px solid rgba(35, 30, 27, 0.14);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.14);
   white-space: nowrap;
-  color: #1A1513;
+  color: #000000;
 }
 
 th:first-child,
@@ -1371,13 +1468,13 @@ th {
   font-family: 'DM Mono', monospace;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #4A413A;
+  color: #000000;
   font-weight: 600;
 }
 
 .table-note {
   font-size: 0.78rem;
-  color: #4A413A;
+  color: #000000;
   margin: 17px 0 0;
   font-weight: 500;
 }
@@ -1408,7 +1505,7 @@ td.diff-worst {
   margin: 14px 0 0;
   font-size: 0.78rem;
   font-weight: 500;
-  color: #4A413A;
+  color: #000000;
 }
 
 .diff-legend span {
@@ -1435,15 +1532,15 @@ td.diff-worst {
 .duplicate-group {
   padding: 18px;
   margin-top: 12px;
-  border: 1px solid rgba(107, 48, 18, 0.18);
-  background: #F7EEDD;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  background: #ffffff;
   border-radius: 8px;
 }
 
 .duplicate-group span {
   font-family: 'DM Mono', monospace;
   font-size: 0.67rem;
-  color: #6B3012;
+  color: #000000;
   margin-right: 12px;
   font-weight: 700;
 }
@@ -1452,20 +1549,20 @@ td.diff-worst {
   font-family: 'DM Mono', monospace;
   font-size: 0.72rem;
   word-break: break-all;
-  color: #1A1513;
+  color: #000000;
   font-weight: 600;
 }
 
 .duplicate-group p {
   font-size: 0.88rem;
   margin: 8px 0 0;
-  color: #3B332E;
+  color: #000000;
   font-weight: 500;
 }
 
 .empty {
   font-size: 0.92rem;
-  color: #4A413A;
+  color: #000000;
   padding: 22px 0;
   font-weight: 500;
 }
@@ -1481,10 +1578,10 @@ td.diff-worst {
   text-align: left !important;
   font-family: 'DM Mono', monospace !important;
   font-size: 0.72rem !important;
-  color: #4A413A !important;
+  color: #000000 !important;
   font-weight: 500;
-  background: rgba(247, 238, 221, 0.65) !important;
-  border: 1px solid rgba(107, 48, 18, 0.16);
+  background: rgba(255, 255, 255, 0.65) !important;
+  border: 1px solid rgba(0, 0, 0, 0.16);
   border-radius: 14px;
 }
 
@@ -1509,7 +1606,7 @@ td.diff-worst {
   font-size: 2.1rem;
   letter-spacing: 0.08em;
   line-height: 1;
-  color: #1A1513;
+  color: #000000;
 }
 
 .footer-tagline {
@@ -1518,23 +1615,23 @@ td.diff-worst {
   font-family: 'DM Sans', Arial, sans-serif;
   font-size: 0.95rem;
   line-height: 1.65;
-  color: #4A413A;
+  color: #000000;
   font-weight: 500;
 }
 
 .footer-how {
-  color: #6B3012;
+  color: #000000;
   text-decoration: none;
   font-weight: 700;
   letter-spacing: 0.06em;
-  border-bottom: 1px solid rgba(107, 48, 18, 0.4);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.4);
   padding-bottom: 2px;
   transition: color 0.2s ease, border-color 0.2s ease;
 }
 
 .footer-how:hover {
-  color: #1A1513;
-  border-color: #1A1513;
+  color: #000000;
+  border-color: #000000;
 }
 
 .footer-cols {
@@ -1557,7 +1654,7 @@ td.diff-worst {
   font-size: 0.64rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #6B3012;
+  color: #000000;
   font-weight: 700;
 }
 
@@ -1565,7 +1662,7 @@ td.diff-worst {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  color: #4A413A;
+  color: #000000;
   text-decoration: none;
   font-weight: 600;
   padding: 2px 0;
@@ -1574,8 +1671,8 @@ td.diff-worst {
 }
 
 .footer-col a:hover {
-  color: #1A1513;
-  border-bottom-color: rgba(26, 21, 19, 0.45);
+  color: #000000;
+  border-bottom-color: rgba(0, 0, 0, 0.45);
 }
 
 .footer-col svg {
@@ -1600,10 +1697,10 @@ td.diff-worst {
   display: inline-flex;
   align-items: center;
   padding: 6px 13px;
-  border: 1px solid rgba(107, 48, 18, 0.3);
+  border: 1px solid rgba(0, 0, 0, 0.3);
   border-radius: 999px;
-  background: rgba(239, 229, 211, 0.9);
-  color: #6B3012;
+  background: rgba(255, 255, 255, 0.9);
+  color: #000000;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1615,7 +1712,7 @@ td.diff-worst {
   font-family: 'DM Sans', Arial, sans-serif;
   font-size: 0.82rem;
   line-height: 1.6;
-  color: #6d625a;
+  color: #000000;
   max-width: 280px;
 }
 
@@ -1626,7 +1723,7 @@ td.diff-worst {
   gap: 14px;
   flex-wrap: wrap;
   padding-top: 24px;
-  border-top: 1px solid rgba(35, 30, 27, 0.14);
+  border-top: 1px solid rgba(0, 0, 0, 0.14);
 }
 
 /* Guided tour */
@@ -1634,7 +1731,7 @@ td.diff-worst {
   position: fixed;
   inset: 0;
   z-index: 140;
-  background: rgba(26, 21, 19, 0.45);
+  background: rgba(0, 0, 0, 0.45);
   animation: tour-fade 0.2s ease;
 }
 
@@ -1643,7 +1740,7 @@ td.diff-worst {
   z-index: 141;
   border-radius: 12px;
   outline: 2px solid #C86A3C;
-  box-shadow: 0 0 0 9999px rgba(26, 21, 19, 0.45);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
   pointer-events: none;
   transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -1653,10 +1750,10 @@ td.diff-worst {
   z-index: 150;
   width: 320px;
   padding: 18px 18px 16px;
-  border: 1px solid rgba(107, 48, 18, 0.25);
+  border: 1px solid rgba(0, 0, 0, 0.25);
   border-radius: 10px;
-  background: #F7EEDD;
-  box-shadow: 0 18px 50px rgba(26, 21, 19, 0.3);
+  background: #ffffff;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.3);
   animation: tour-fade 0.2s ease;
 }
 
@@ -1666,15 +1763,15 @@ td.diff-worst {
   font-size: 0.62rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #6B3012;
+  color: #000000;
   font-weight: 700;
 }
 
 .tour-card h3 {
   margin: 0 0 6px;
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: 1.15rem;
-  color: #1A1513;
+  font-family: 'Katsuno Japan', 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  font-size: 0.98rem;
+  color: #000000;
   font-weight: 800;
 }
 
@@ -1682,7 +1779,7 @@ td.diff-worst {
   margin: 0 0 12px;
   font-size: 0.88rem;
   line-height: 1.5;
-  color: #4A413A;
+  color: #000000;
   font-weight: 500;
 }
 
@@ -1696,7 +1793,7 @@ td.diff-worst {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: rgba(35, 30, 27, 0.2);
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .tour-dots i.active {
@@ -1735,20 +1832,20 @@ td.diff-worst {
   max-width: 620px;
   margin: 90px auto;
   padding: 34px;
-  border: 1px solid rgba(107, 48, 18, 0.25);
-  background: #F7EEDD;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  background: #ffffff;
   border-radius: 10px;
   text-align: left;
 }
 
 .error-boundary h2 {
-  font-family: 'Playfair Display', Georgia, serif;
-  color: #1A1513;
+  font-family: 'Katsuno Japan', 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  color: #000000;
   margin: 0 0 10px;
 }
 
 .error-boundary p {
-  color: #4A413A;
+  color: #000000;
   font-weight: 500;
   word-break: break-word;
 }
@@ -1756,8 +1853,11 @@ td.diff-worst {
 /* Responsive Rules */
 @media (max-width: 760px) {
   header {
-    padding: 0 18px;
-    height: 68px;
+    padding: 10px 18px;
+    height: auto;
+    min-height: 68px;
+    flex-wrap: wrap;
+    gap: 10px;
   }
 
   nav {
@@ -1818,8 +1918,15 @@ td.diff-worst {
 }
 
 @media (max-width: 450px) {
+  header {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
   nav {
     gap: 8px;
+    row-gap: 4px;
+    flex-wrap: wrap;
     font-size: 0.82rem;
   }
 

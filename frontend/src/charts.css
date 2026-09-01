@@ -7,7 +7,7 @@
   min-width: 340px;
   height: 155px;
   display: flex;
-  border-bottom: 1px solid rgba(61, 55, 51, 0.14);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.14);
 }
 
 .chart-axis {
@@ -17,7 +17,7 @@
   justify-content: space-between;
   padding: 0 5px 17px 0;
   font: 9px 'DM Mono', monospace;
-  color: #665D56;
+  color: #000000;
   text-align: right;
 }
 
@@ -25,7 +25,7 @@
   flex: 1;
   display: flex;
   justify-content: space-around;
-  background: repeating-linear-gradient(to bottom, transparent 0, transparent 49%, rgba(61, 55, 51, 0.08) 50%, transparent 51%, transparent 99%);
+  background: repeating-linear-gradient(to bottom, transparent 0, transparent 49%, rgba(0, 0, 0, 0.08) 50%, transparent 51%, transparent 99%);
 }
 
 .channel-chart-group {
@@ -44,7 +44,7 @@
   bottom: 0;
   text-transform: uppercase;
   font: 9px 'DM Mono', monospace;
-  color: #342E2A;
+  color: #000000;
   font-weight: 700;
 }
 
@@ -79,7 +79,7 @@
 
 .channel-bar-wrap span {
   font-size: 8px;
-  color: #665D56;
+  color: #000000;
   margin-top: 3px;
   writing-mode: vertical-rl;
   transform: rotate(180deg);
@@ -97,7 +97,7 @@
   gap: 8px;
   align-items: center;
   font-size: 10px;
-  color: #342E2A;
+  color: #000000;
 }
 
 .dominant-bar > span {
@@ -108,7 +108,7 @@
 
 .dominant-bar > div {
   height: 10px;
-  background: rgba(61, 55, 51, 0.08);
+  background: rgba(0, 0, 0, 0.08);
   overflow: hidden;
   border-radius: 2px;
 }
@@ -121,14 +121,14 @@
 .dominant-bar b {
   font: 9px 'DM Mono', monospace;
   text-align: right;
-  color: #5C534C;
+  color: #000000;
 }
 
 .compare-chart-wrap {
   margin: 8px 0 27px;
   padding: 15px 0 2px;
-  border-top: 1px solid rgba(61, 55, 51, 0.14);
-  border-bottom: 1px solid rgba(61, 55, 51, 0.14);
+  border-top: 1px solid rgba(0, 0, 0, 0.14);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.14);
   overflow-x: auto;
 }
 
@@ -138,7 +138,7 @@
   gap: 7px 14px;
   margin: 0 0 14px;
   font-size: 10px;
-  color: #342E2A;
+  color: #000000;
 }
 
 .compare-legend span {
@@ -180,8 +180,8 @@
   align-items: flex-end;
   justify-content: center;
   gap: 3px;
-  border-bottom: 1px solid rgba(61, 55, 51, 0.16);
-  background: repeating-linear-gradient(to bottom, transparent 0, transparent 49%, rgba(61, 55, 51, 0.08) 50%, transparent 51%, transparent 99%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.16);
+  background: repeating-linear-gradient(to bottom, transparent 0, transparent 49%, rgba(0, 0, 0, 0.08) 50%, transparent 51%, transparent 99%);
 }
 
 .compare-bars i {
@@ -199,13 +199,13 @@
   text-align: center;
   font-size: 9px;
   line-height: 1.15;
-  color: #5C534C;
+  color: #000000;
 }
 
 /* Winner ring per metric group; the rest of the group dims */
 .compare-bars i.is-best {
   opacity: 1;
-  outline: 1.5px solid #342E2A;
+  outline: 1.5px solid #000000;
   outline-offset: 1.5px;
 }
 
@@ -215,7 +215,7 @@
 
 .chart-caption {
   font-size: 10px !important;
-  color: #665D56 !important;
+  color: #000000 !important;
   margin: 11px 0 !important;
 }
 

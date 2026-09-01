@@ -35,6 +35,106 @@ function nearlyEqual(a, b) {
   return Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(a), Math.abs(b));
 }
 
+// Hero wordmark rotation. A timer keeps each face on screen for its exact display
+// duration (EN 3s -> JA 2.5s -> HI 1s) and the CSS per-letter transition-delay
+// staggers the letters, so the word is spelled out one character at a time with a
+// smooth 0.4s crossfade between words.
+const WORDMARK_WORDS = [
+  { cls: 'brand-en', text: 'LUMEN', duration: 3000 },
+  { cls: 'brand-ja', text: 'ルーメン', duration: 2500, lang: 'ja' },
+  { cls: 'brand-hi', text: 'लुमेन', duration: 1000, lang: 'hi' },
+];
+
+// Split into user-perceived characters (grapheme clusters) so combining
+// marks in Devanagari stay attached to their base letter.
+function splitLetters(text) {
+  try {
+    if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+      return [...new Intl.Segmenter('und', { granularity: 'grapheme' }).segment(text)].map(s => s.segment);
+    }
+  } catch { /* fall through to a code-point split */ }
+  return Array.from(text);
+}
+
+function HeroWordmark() {
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setIndex(i => (i + 1) % WORDMARK_WORDS.length), WORDMARK_WORDS[index].duration);
+    return () => window.clearTimeout(timer);
+  }, [index]);
+
+  return (
+    <h1 className="brand-heading" aria-label="LUMEN">
+      {WORDMARK_WORDS.map((word, wi) => (
+        <span
+          key={word.cls}
+          className={`brand-text ${word.cls} ${wi === index ? 'is-active' : ''}`}
+          lang={word.lang}
+          aria-hidden={word.lang ? 'true' : undefined}
+        >
+          {splitLetters(word.text).map((ch, i) => (
+            <span key={i} className="brand-letter" style={{ '--i': i }}>{ch}</span>
+          ))}
+        </span>
+      ))}
+    </h1>
+  );
+}
+
+/* Ambient falling petals/leaves — a decorative layer behind all content.
+   Five petals drop from above at evenly spread horizontal positions covering
+   the full viewport width. Each gets its fall speed/duration, sway, rotation
+   speed/direction, size, tone and opacity from CSS custom props set once via
+   useMemo (randomized per page load). Motion is pure CSS: the outer span runs
+   a translateY fall, the inner leaf runs a continuous rotate — transform-only,
+   so the compositor keeps it cheap. */
+const rand = (min, max) => min + Math.random() * (max - min);
+const PETAL_HUES = [328, 336, 344, 352, 358, 12, 20, 28, 36]; // pinks + oranges only
+
+function FallingPetals() {
+  const petals = useMemo(
+    () =>
+      Array.from({ length: 5 }, (_, i) => ({
+        // Spread evenly across the viewport (left -> right), with a little
+        // jitter so it still feels organic rather than a fixed grid.
+        x: Math.min(94, Math.max(2, (i + 0.5) * 20 + rand(-7, 7))),
+        dur: rand(13, 21),
+        delay: -(i * 5.4 + rand(0, 2.2)), // ~5s stagger; negative = already raining on load
+        sway: rand(-55, 55),
+        rdur: rand(2.4, 5.8),
+        rdir: Math.random() > 0.5 ? 'normal' : 'reverse',
+        size: rand(26, 42),
+        hue: PETAL_HUES[Math.floor(Math.random() * PETAL_HUES.length)],
+        op: rand(0.75, 0.95),
+      })),
+    []
+  );
+
+  return (
+    <div className="petal-scene" aria-hidden="true">
+      {petals.map((p, i) => (
+        <span
+          key={i}
+          className="petal"
+          style={{
+            '--x': `${p.x}%`,
+            '--dur': `${p.dur}s`,
+            '--delay': `${p.delay}s`,
+            '--sway': `${p.sway}px`,
+            '--op': p.op,
+            fontSize: `${p.size}px`,
+          }}
+        >
+          <span
+            className="leaf"
+            style={{ '--rdur': `${p.rdur}s`, '--rdir': p.rdir, '--hue': p.hue }}
+          />
+        </span>
+      ))}
+    </div>
+  );
+}
+
 // { best, worst } for a comparable metric, or null when there is nothing to
 // diff: neutral metric, fewer than two usable values, or an all-way tie.
 function metricDiff(data, key) {
@@ -185,6 +285,7 @@ function Reveal({ children, className = '', delay = 0, as: Tag = 'div', ...props
 
 function App() {
   const [page, setPage] = useState('home');
+  const [pendingScroll, setPendingScroll] = useState(null);
   const [tourStep, setTourStep] = useState(null);
   const [images, setImages] = useState([]);
   const [selected, setSelected] = useState([]);
@@ -231,6 +332,17 @@ function App() {
     setTourStep(current => (current != null && current + 1 < tourSteps.length ? current + 1 : null));
   }, []);
   const getTourTarget = useCallback(() => tourTargets.current[tourSteps[tourStep]?.id], [tourStep]);
+  const goToLimitations = useCallback(() => {
+    if (page === 'home') {
+      const target = document.getElementById('limitations');
+      if (target && typeof target.scrollIntoView === 'function') {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      return;
+    }
+    setPendingScroll('limitations');
+    setPage('home');
+  }, [page]);
   const fetchSaved = useCallback(async (options = {}) => {
     const nextPage = options.page ?? galleryPage;
     const nextQuery = options.q ?? galleryQuery;
@@ -284,6 +396,14 @@ function App() {
     }
     if (!seenTour) setTourStep(current => (current == null ? 0 : current));
   }, [page]);
+  useEffect(() => {
+    if (page !== 'home' || !pendingScroll) return;
+    const target = document.getElementById(pendingScroll);
+    if (target && typeof target.scrollIntoView === 'function') {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    setPendingScroll(null);
+  }, [page, pendingScroll]);
   useEffect(() => {
     if (page !== 'app') {
       lastGalleryFetch.current = '';
@@ -395,11 +515,22 @@ function App() {
   return (
     <main className="site">
       <div className="global-background" aria-hidden="true" />
+      <FallingPetals />
       <header>
-        <button className="wordmark" type="button" onClick={() => setPage('home')}>LUMEN</button>
+        <button className="wordmark" type="button" onClick={() => setPage('home')} aria-label="LUMEN — back to home">
+          <span className="wordmark-stack" aria-hidden="true">LUMEN</span>
+        </button>
         <nav>
           <button type="button" className={page === 'home' ? 'active' : ''} onClick={() => setPage('home')}>Home</button>
           <button type="button" className={page === 'app' ? 'active' : ''} onClick={() => setPage('app')}>Analyzer</button>
+          <button type="button" onClick={goToLimitations}>Limitations</button>
+          <a
+            href="https://github.com/PIYUSH-NEXTGEN/LUMEN/blob/main/CONTRIBUTING.md"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Contributing
+          </a>
           <button type="button" className="nav-help" onClick={() => setTourStep(0)} aria-label="Replay the guided tour" title="Replay the guided tour">?</button>
         </nav>
       </header>
@@ -528,10 +659,7 @@ function Home({ openApp }) {
     <>
       <section className="hero reveal" ref={heroRef}>
         <p className="eyebrow">IMAGE ANALYSIS, MADE LEGIBLE</p>
-        <h1 className="brand-heading" aria-label="LUMEN">
-          <span className="brand-text brand-en">LUMEN</span>
-          <span className="brand-text brand-ja" aria-hidden="true">ルーメン</span>
-        </h1>
+        <HeroWordmark />
         <p>A command-line and API-based image analysis tool for quality metrics, statistics, and duplicate detection.</p>
         <button type="button" className="primary" onClick={openApp}>Open analyzer <span>→</span></button>
       </section>
@@ -550,7 +678,7 @@ function Home({ openApp }) {
           ))}
         </div>
       </section>
-      <section className="limitations">
+      <section className="limitations" id="limitations">
         <p className="eyebrow">A CLEAR-EYED NOTE</p>
         <h2>What LUMEN does not do.</h2>
         <ul>
@@ -599,6 +727,16 @@ function GuidedTour({ stepIndex, getTarget, isLast, onNext, onClose }) {
     cardRef.current?.querySelector('.primary')?.focus();
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose, stepIndex]);
+
+  // Bring the highlighted target into view whenever the step changes; the
+  // scroll listener in the layout effect keeps the spotlight glued to it
+  // while the smooth scroll is in flight.
+  useEffect(() => {
+    const el = getTarget();
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [getTarget, stepIndex]);
 
   if (!rect) return null;
   const view = { width: window.innerWidth, height: window.innerHeight };
@@ -678,7 +816,9 @@ function Analyzer(props) {
               ? `${Math.ceil(file.size / 1024)} KB · ready to analyze`
               : `Drop a PNG, JPEG, or WebP here, or browse your device (max ${MAX_UPLOAD_MB} MB).`}
           </p>
-          {preview && <img src={preview} alt="Selected preview" />}
+          {preview && (
+            <img src={preview} alt="Selected preview" className="upload-preview" draggable={false} />
+          )}
         </div>
         <div className="analysis-card">
           <p className="eyebrow">ANALYSIS</p>
