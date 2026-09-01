@@ -2,10 +2,12 @@ import io
 import hashlib
 import numpy as np
 import config
-
+from PIL import Image as PILImage
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from PIL import Image as PILImage
+
+
+
 from image_analyzer.database.connection import SessionLocal
 from image_analyzer.database.models import Image as DBImage
 from image_analyzer.database.models import DuplicateGroup as DBDuplicateGroup
@@ -19,7 +21,11 @@ from image_analyzer.image_quality import (
 from image_analyzer.models import ImageReport, HistogramStats
 
 
-app = FastAPI(title="LUMEN API")
+app = FastAPI(
+    title="LUMEN API",
+    description="Image analysis and quality assessment API",
+    version="1.0.0"
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -35,7 +41,7 @@ def root():
 
 
 @app.get("/images")
-def list_images():
+def fetch_images():
     session = SessionLocal()
     try:
         images = session.query(DBImage).all()
@@ -55,7 +61,7 @@ def list_images():
 
 
 @app.post("/analyze", response_model=ImageReport)
-async def analyze_image(file: UploadFile = File(...)):
+async def analyze_image(file: UploadFile = File(...), save_db: bool = False):
     contents = await file.read()
     pil_image = PILImage.open(io.BytesIO(contents)).convert("RGB")
     arr = np.array(pil_image)
@@ -72,7 +78,7 @@ async def analyze_image(file: UploadFile = File(...)):
     luminance = compute_luminance(arr)
     underexposed, overexposed = exposure_stats(luminance)
 
-    return ImageReport(
+    report = ImageReport(
         filename=file.filename,
         file_path=file.filename,
         file_hash=hashlib.sha256(contents).hexdigest(),
@@ -89,6 +95,11 @@ async def analyze_image(file: UploadFile = File(...)):
         entropy_score=entropy_score(arr),
         dominant_colors=dominant_colors(arr),
     )
+
+    if save_db:
+        from image_analyzer.database.connection import save_to_db
+        save_to_db(report)
+    return report
 
 
 @app.get("/images/{image_id}")
@@ -180,3 +191,5 @@ def list_duplicates():
         return result
     finally:
         session.close()
+
+
