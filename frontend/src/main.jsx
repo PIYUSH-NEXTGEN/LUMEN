@@ -17,7 +17,6 @@ function format(value) {
 
 function App() {
   const [page, setPage] = useState('home');
-  const [dark, setDark] = useState(false);
   const [images, setImages] = useState([]);
   const [selected, setSelected] = useState([]);
   const [compare, setCompare] = useState([]);
@@ -77,13 +76,14 @@ function App() {
   };
   const selectedNames = useMemo(() => images.filter(i => selected.includes(i.id)), [images, selected]);
 
-  return <main className={dark ? 'site dark' : 'site'}>
+  return <main className="site">
     <header><button className="wordmark" onClick={() => setPage('home')}>LUMEN</button><nav>
       <button className={page === 'home' ? 'active' : ''} onClick={() => setPage('home')}>Home</button>
       <button className={page === 'app' ? 'active' : ''} onClick={() => setPage('app')}>Analyzer</button>
-      <button className="theme" onClick={() => setDark(!dark)} aria-label="Toggle colour theme">{dark ? 'Light' : 'Dark'}</button>
     </nav></header>
-    {page === 'home' ? <Home openApp={() => setPage('app')} /> : <Analyzer {...{file, preview, report, loading, message, images, selected, compare, duplicates, selectedNames, pickFile, analyze, toggle, runCompare, fileRef}} />}
+    <div className="content-visual-shell">
+      {page === 'home' ? <Home openApp={() => setPage('app')} /> : <Analyzer {...{file, preview, report, loading, message, images, selected, compare, duplicates, selectedNames, pickFile, analyze, toggle, runCompare, fileRef}} />}
+    </div>
     <footer className="site-footer">
       <span className="footer-note">LUMEN — built as a learning project</span>
       <div className="footer-links">
@@ -101,22 +101,93 @@ function GitHubIcon() { return <svg viewBox="0 0 24 24" aria-hidden="true"><path
 function BookIcon() { return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v17H6.5A2.5 2.5 0 0 0 4 21.5z" /><path d="M4 4.5v17M8 6h8" /></svg> }
 function FlagIcon() { return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 22V3m0 1h11l-1 4 1 4H5" /></svg> }
 
+function BrandWordmark() {
+  const [active, setActive] = useState('LUMEN');
+
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (media.matches) {
+      setActive('LUMEN');
+      return undefined;
+    }
+
+    let timeoutId;
+
+    const loop = () => {
+      setActive('LUMEN');
+      timeoutId = window.setTimeout(() => {
+        setActive('ルーメン');
+        timeoutId = window.setTimeout(() => {
+          setActive('LUMEN');
+          timeoutId = window.setTimeout(loop, 700);
+        }, 2500);
+      }, 7500);
+    };
+
+    loop();
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
+  return (
+    <div className="brand-wordmark" aria-live="polite" aria-label={`Brand name ${active}`}>
+      <span className={`brand-name brand-english ${active === 'LUMEN' ? 'is-visible' : ''}`}>LUMEN</span>
+      <span className={`brand-name brand-japanese ${active === 'ルーメン' ? 'is-visible' : ''}`}>ルーメン</span>
+    </div>
+  );
+}
+
 function Home({ openApp }) { return <>
-  <section className="hero reveal"><p className="eyebrow">IMAGE ANALYSIS, MADE LEGIBLE</p><h1>LUMEN</h1><p>A command-line and API-based image analysis tool for quality metrics, statistics, and duplicate detection.</p><button className="primary" onClick={openApp}>Open analyzer <span>→</span></button></section>
-  <section className="content-section"><div className="section-head"><p className="eyebrow">WHAT IT MEASURES</p><h2>Useful detail, without the noise.</h2></div><div className="feature-grid">
-    {['Per-image statistics', 'Quality metrics', 'Dominant color extraction', 'Exact duplicate detection', 'CLI exports', 'Optional persistence'].map((title, i) => <article className="feature" key={title}><span>0{i + 1}</span><h3>{title}</h3><p>{['Dimensions, data type, mean, spread, and channel-level values.', 'Brightness, contrast, sharpness, colorfulness, entropy, and exposure.', 'A concise palette with RGB values and share of the image.', 'SHA-256 hash groups identify byte-for-byte matching files.', 'Export analysis as CSV or JSON from the command line.', 'Save analysis results to PostgreSQL when you need a history.'][i]}</p></article>)}
-  </div></section>
-  <section className="limitations"><p className="eyebrow">A CLEAR-EYED NOTE</p><h2>What LUMEN does not do.</h2><ul><li>Duplicate detection is exact-hash only; resized or recompressed near-duplicates are not found.</li><li>Its colorfulness score is a simplified proxy, not the standard CV literature metric.</li><li>There is no historical versioning: re-analysis overwrites a record.</li><li>Compare is metric-based, not a visual or perceptual image comparison.</li></ul><p className="portfolio-note">This is currently a learning and portfolio-stage project, not production-ready software.</p></section>
+  <section className="hero reveal">
+    <div className="hero-topline">
+      <BrandWordmark />
+    </div>
+
+    <div className="hero-layout">
+      <div className="hero-copy">
+        <p className="eyebrow">Image intelligence</p>
+        <h2>Analyze images with clarity.</h2>
+        <p>Measure brightness, contrast, sharpness, colorfulness, exposure, histograms, and exact duplicates with a precise visual workflow for modern image analysis.</p>
+        <div className="hero-actions">
+          <button className="primary" onClick={openApp}>Analyze image <span>→</span></button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section className="content-section">
+    <div className="section-head">
+      <p className="eyebrow">What LUMEN measures</p>
+      <h2>Useful detail, without the noise.</h2>
+    </div>
+    <div className="feature-grid">
+      {['Per-image statistics', 'Quality metrics', 'Dominant color extraction', 'Exact duplicate detection', 'CLI exports', 'Optional persistence'].map((title, i) => <article className="feature" key={title}><span>0{i + 1}</span><h3>{title}</h3><p>{['Dimensions, data type, mean, spread, and channel-level values.', 'Brightness, contrast, sharpness, colorfulness, entropy, and exposure.', 'A concise palette with RGB values and share of the image.', 'SHA-256 hash groups identify byte-for-byte matching files.', 'Export analysis as CSV or JSON from the command line.', 'Save analysis results to PostgreSQL when you need a history.'][i]}</p></article>)}
+    </div>
+  </section>
+
+  <section className="limitations">
+    <p className="eyebrow">A clear-eyed note</p>
+    <h2>What LUMEN does not do.</h2>
+    <ul><li>Duplicate detection is exact-hash only; resized or recompressed near-duplicates are not found.</li><li>Its colorfulness score is a simplified proxy, not the standard CV literature metric.</li><li>There is no historical versioning: re-analysis overwrites a record.</li><li>Compare is metric-based, not a visual or perceptual image comparison.</li></ul>
+    <p className="portfolio-note">This is currently a learning and portfolio-stage project, not production-ready software.</p>
+  </section>
 </> }
 
 function Analyzer(props) { const { file, preview, report, loading, message, images, selected, compare, duplicates, selectedNames, pickFile, analyze, toggle, runCompare, fileRef } = props; return <div className="app-page">
   <section className="app-intro"><p className="eyebrow">WORKSPACE</p><h1>Inspect the image.<br /><em>Keep the signal.</em></h1><p>Upload an image, save its analysis, then compare its metrics alongside other records.</p></section>
   <section className="upload-layout">
+    <div className="upload-toolbar">
+      <div>
+        <p className="eyebrow">IMAGE ANALYZER</p>
+        <h2>Add image</h2>
+      </div>
+      <button type="button" className="primary add-image-button" onClick={() => fileRef.current.click()}>Add image</button>
+    </div>
     <div className="upload-box" onClick={() => fileRef.current.click()} onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); if (e.dataTransfer.files[0]) pickFile({target:{files:e.dataTransfer.files}}); }}>
       <input ref={fileRef} type="file" accept="image/*" onChange={pickFile} /><div className="upload-symbol">↑</div><h2>{file ? file.name : 'Choose an image'}</h2><p>{file ? `${Math.ceil(file.size / 1024)} KB · ready to analyze` : 'Drop a PNG, JPEG, or WebP here, or browse your device.'}</p>
       {preview && <img src={preview} alt="Selected preview" />}
     </div>
-    <div className="analysis-card"><p className="eyebrow">ANALYSIS</p>{report ? <Report report={report} /> : <><h2>Start with one image.</h2><p>Results are saved through the API and available for metric comparison below.</p></>}<button className="primary" disabled={!file || loading} onClick={analyze}>{loading ? 'Working…' : 'Analyze & save'} <span>→</span></button></div>
+    <div className="analysis-card"><div className="analysis-summary"><p className="eyebrow">STATISTICS</p>{report ? <Report report={report} /> : <><h2>Start with one image.</h2><p>Results are saved through the API and available for metric comparison below.</p></>}</div><button className="primary" disabled={!file || loading} onClick={analyze}>{loading ? 'Working…' : 'Analyze image'} <span>→</span></button></div>
   </section>
   {message && <p className="message">{message}</p>}
   <section className="workspace-section"><div className="section-line"><div><p className="eyebrow">SAVED RECORDS</p><h2>Gallery <small>{images.length} images</small></h2></div><button className="text-button" onClick={() => { fetch(`${API}/images`).then(r => r.json()).then(setImages).catch(() => {}); }}>Refresh</button></div>
