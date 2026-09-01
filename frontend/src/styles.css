@@ -31,6 +31,15 @@
   color: #000000;
   line-height: 1.5;
   font-weight: 400;
+  /* Theme variables (override these at runtime when swapping the background artwork) */
+  --bg-image: url('/images/background.jpg'); /* relative to the built site public folder */
+  --panel-1: #F4E8DB; /* editorial warm cream */
+  --panel-2: #D9C6B0; /* sand */
+  --panel-3: #6B8A80; /* muted blue/green accent */
+  --panel-4: #2B2623; /* deep charcoal for emphasis */
+  --accent: #C86A3C;
+  --panel-text-dark: #111111;
+  --panel-text-light: #ffffff;
   background-color: #ffffff;
 }
 
@@ -45,22 +54,29 @@ h3 {
 
 /* Solid White Canvas Background Layer */
 .global-background {
+  /* Continuous single artwork behind the site. The image is set via --bg-image.
+     Use background-size: auto 100vh to prioritize showing the full image vertically
+     (avoid cover which crops important vertical content). Fixed attachment keeps
+     the artwork as one continuous artwork while content scrolls above it. */
   position: fixed;
   inset: 0;
   width: 100vw;
   height: 100vh;
   z-index: -1;
   pointer-events: none;
-  background-color: #ffffff;
+  background-image: var(--bg-image);
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  /* Make the image scale so its full vertical extent is visible within the viewport
+     (on very narrow screens it will letterbox horizontally). */
+  background-size: auto 100vh;
 }
 
-.global-background::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: rgba(255, 255, 255, 0.42);
-  transition: background 0.3s ease;
-}
+/* Remove broad translucent wash overlay — keep the artwork clearly visible.
+   If a subtle wash is ever needed, set --background-wash in :root and apply it
+   explicitly instead of a persistent white overlay. */
+.global-background::after { content: none; }
 
 .site {
   position: relative;
@@ -154,10 +170,10 @@ header {
   align-items: center;
   justify-content: space-between;
   padding: 0 28px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.18);
-  background: rgba(255, 255, 255, 0.68);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  /* Use an opaque editorial panel color derived from the artwork */
+  background: var(--panel-1);
+  color: var(--panel-text-dark);
   border-radius: 0 0 10px 10px;
 }
 
@@ -223,10 +239,10 @@ nav .active::after,
   width: 30px;
   height: 30px;
   padding: 0;
-  border: 1px solid rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.6);
-  color: #000000;
+  background: var(--panel-2);
+  color: var(--panel-text-dark);
   font-weight: 800;
   font-size: 0.9rem;
   line-height: 1;
@@ -417,20 +433,29 @@ nav .active::after,
   gap: 16px;
 }
 
-/* Solid Editorial Color Panels - Rich Warm Cream */
-.upload-box,
-.analysis-card,
-.image-card,
-.comparison {
-  border: 1px solid rgba(0, 0, 0, 0.18);
-  background: #ffffff;
+/* Solid Editorial Color Panels (use theme variables) */
+.panel {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: var(--panel-1);
+  color: var(--panel-text-dark);
   border-radius: 10px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
 }
 
+/* Named panel variants for visual rhythm and harmony */
+.panel--muted { background: var(--panel-2); color: var(--panel-text-dark); }
+.panel--accent { background: var(--panel-3); color: var(--panel-text-light); }
+.panel--dark { background: var(--panel-4); color: var(--panel-text-light); }
+
+/* Keep legacy class names mapped to the panel system for minimal markup changes */
+.upload-box, .analysis-card, .image-card, .comparison { }
+
+/* Prefer applying the .panel class in markup; fall back to the panel defaults if not present. */
+
 .feature {
-  border: 1px solid rgba(0, 0, 0, 0.18);
-  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: var(--panel-1);
+  color: var(--panel-text-dark);
   border-radius: 12px;
   padding: 28px;
   min-height: 215px;
@@ -484,8 +509,8 @@ nav .active::after,
 .limitations {
   padding: 60px max(28px, calc((100% - 1124px) / 2));
   scroll-margin-top: 20px;
-  background: #f7f7f7;
-  border: 1px solid rgba(0, 0, 0, 0.22);
+  background: var(--panel-2);
+  border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 12px;
   margin-top: 50px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
@@ -583,8 +608,8 @@ nav .active::after,
 }
 
 .upload-box:hover {
-  border-color: #000000;
-  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0,0,0,0.2);
+  background: var(--panel-2);
 }
 
 .upload-box input {
@@ -630,9 +655,9 @@ nav .active::after,
   object-fit: contain;
   object-position: center;
   border-radius: 10px;
-  border: 1px solid rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(0, 0, 0, 0.12);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-  background: rgba(255, 255, 255, 0.55);
+  background: var(--panel-1);
   margin-top: 18px;
   user-select: none;
   -webkit-user-drag: none;
@@ -711,8 +736,9 @@ nav .active::after,
 
 .channel {
   padding: 10px;
-  border-left: 3px solid #000000;
-  background: #f7f7f7;
+  border-left: 3px solid var(--panel-4);
+  background: var(--panel-2);
+  color: var(--panel-text-dark);
   border-radius: 4px;
 }
 
@@ -860,10 +886,10 @@ nav .active::after,
   gap: 10px;
   padding: 12px 12px 12px 14px;
   border-radius: 8px;
-  border: 1px solid rgba(0, 0, 0, 0.25);
-  background: #ffffff;
-  color: #000000;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: var(--panel-1);
+  color: var(--panel-text-dark);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
   font-size: 0.86rem;
   font-weight: 600;
   animation: toast-in 0.25s cubic-bezier(0.22, 1, 0.36, 1);
