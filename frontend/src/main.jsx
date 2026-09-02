@@ -3,7 +3,10 @@ import { createRoot } from 'react-dom/client';
 import './styles.css';
 import './charts.css';
 
-const API = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+// Default to 127.0.0.1 instead of localhost: on Windows, "localhost" can
+// resolve to IPv6 ::1 while uvicorn listens on IPv4 only, which makes the
+// backend look unreachable even when it is running.
+const API = (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
 const MAX_UPLOAD_MB = 50;      // keep in sync with config.MAX_UPLOAD_MB on the API
 const GALLERY_PAGE_SIZE = 12;  // page size for the saved-records gallery
 const TOUR_KEY = 'lumen-tour-done';
@@ -361,12 +364,18 @@ function App() {
         const body = await res.json().catch(() => null);
         throw new Error((body && (body.detail || body.message)) || `Server error ${res.status} ${res.statusText}`);
       }
-      return await res.json();
+      // 204 No Content (e.g. successful DELETE) and other empty bodies have
+      // nothing to parse — return null instead of letting json() throw
+      // "Unexpected end of JSON input".
+      if (res.status === 204) return null;
+      const text = await res.text();
+      if (!text) return null;
+      return JSON.parse(text);
     } catch (err) {
       // Network errors in browsers typically surface as TypeError with message
       // "Failed to fetch" — detect that and provide a helpful hint to the user.
       if (err instanceof TypeError || String(err.message).includes('Failed to fetch')) {
-        throw new Error(`Cannot reach the analysis API at ${API}. Is the backend running and accessible?`);
+        throw new Error(`Cannot reach the analysis API at ${API}. Is the backend running? Check by opening ${API}/docs in this browser. If that works but this page still fails, the page origin is not allowed by the API's CORS settings.`);
       }
       throw err;
     }

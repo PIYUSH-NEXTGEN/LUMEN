@@ -34,9 +34,10 @@ app.add_middleware(
     CORSMiddleware,
 allow_origins=[
     "https://lumen-image-analyzer.vercel.app",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173"
 ],
+    # Allow any local dev port (Vite dev server 5173, vite preview 4173, etc.)
+    # so a locally running dashboard can always talk to a locally running API.
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
     allow_methods=["*"],
     allow_headers=["*"],
 )
