@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Playfair+Display:ital,wght@0,700;0,800;1,700;1,800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap');
 
 /* Global Reset & Base Setup */
 * {
@@ -20,11 +20,11 @@
   background-color: #ffffff;
 }
 
-/* Headings use Playfair Display italic for a simple, clean look. */
+/* Headings use simple italic DM Sans. */
 h1,
 h2,
 h3 {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'DM Sans', Arial, sans-serif;
   font-style: italic;
 }
 
@@ -267,7 +267,7 @@ nav .active::after,
 }
 
 .brand-en {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'DM Sans', Arial, sans-serif;
   font-style: italic;
   font-weight: 800;
 }
@@ -1583,7 +1583,7 @@ td.diff-worst {
 }
 
 .footer-wordmark {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'DM Sans', Arial, sans-serif;
   font-style: italic;
   font-weight: 800;
   font-size: 2.1rem;

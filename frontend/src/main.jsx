@@ -705,15 +705,14 @@ function Home({ openApp }) {
       </section>
       <section className="content-section">
         <div className="section-head">
-          <p className="eyebrow">WHAT IT MEASURES</p>
-          <h2>Useful detail, without the noise.</h2>
+          <h2>WHAT IT MEASURES</h2>
         </div>
         <div className="feature-grid">
-          {['Per-image statistics', 'Quality metrics', 'Dominant color extraction', 'Exact duplicate detection', 'CLI exports', 'Optional persistence'].map((title, index) => (
+          {['Image statistics', 'Channel statistics', 'Brightness & luminance', 'Contrast & sharpness', 'Colorfulness & entropy', 'Exposure analysis', 'Histogram regions', 'Dominant colors', 'Duplicate detection'].map((title, index) => (
             <article className="feature" key={title}>
               <span>0{index + 1}</span>
               <h3>{title}</h3>
-              <p>{['Dimensions, data type, mean, spread, and channel-level values.', 'Brightness, contrast, sharpness, colorfulness, entropy, and exposure.', 'A concise palette with RGB values and share of the image.', 'SHA-256 hash groups identify byte-for-byte matching files.', 'Export analysis as CSV or JSON from the command line.', 'Save analysis results to PostgreSQL when you need a history.'][index]}</p>
+              <p>{['Dimensions, data type, mean, standard deviation, min, and max values.', 'Per-channel mean, standard deviation, min, and max for red, green, and blue.', 'Mean brightness and luminance-weighted brightness scores.', 'Contrast score from luminance spread and sharpness from Laplacian variance.', 'Colorfulness proxy from channel range and entropy from pixel distribution.', 'Percentage of underexposed and overexposed pixels in the image.', 'Dark, mid, and bright region percentages from per-channel histograms.', 'Top dominant colors with RGB values and pixel share percentages.', 'SHA-256 hash-based exact duplicate detection across images.'][index]}</p>
             </article>
           ))}
         </div>
