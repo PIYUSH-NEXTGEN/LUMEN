@@ -467,6 +467,44 @@ nav .active::after,
   max-width: 260px;
 }
 
+/* Collapsible feature cards (home page "What it measures") */
+.feature-collapsible {
+  cursor: pointer;
+  user-select: none;
+}
+
+.feature-collapsible:focus-visible {
+  outline: 2px solid #6B3012;
+  outline-offset: 2px;
+}
+
+.feature-collapsible .feature-hint {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(0, 0, 0, 0.45);
+  margin-top: 2px;
+  max-width: none;
+}
+
+.feature-collapsible.is-open .feature-hint {
+  color: #6B3012;
+}
+
+.feature-collapsible .feature-body {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.3s ease, opacity 0.25s ease, margin-top 0.3s ease;
+}
+
+.feature-collapsible.is-open .feature-body {
+  max-height: 280px;
+  opacity: 1;
+  margin-top: 10px;
+}
+
 /* Solid Editorial Section Panels */
 .limitations {
   padding: 60px max(28px, calc((100% - 1124px) / 2));

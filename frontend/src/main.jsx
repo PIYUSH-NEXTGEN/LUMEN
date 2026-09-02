@@ -439,7 +439,7 @@ function App() {
   // Client-side navigation helper and deep-link handling so visible nav items
   // map to real (bookmarkable) URLs and don't 404 when opened directly.
   const navigateTo = useCallback((nextPage, { replace = false, scrollTo = null } = {}) => {
-    const map = { home: '/', app: '/analyzer', limitations: '/limitations', contrib: '/contributing' };
+    const map = { home: '/', app: '/analyzer', how: '/how-it-works', limitations: '/limitations', contrib: '/contributing' };
     setPage(nextPage);
     if (scrollTo) setPendingScroll(scrollTo);
     try {
@@ -456,6 +456,7 @@ function App() {
     const resolveFromPath = (p) => {
       const path = (p || window.location.pathname || '/').replace(/\/$/, '');
       if (path === '/analyzer') return 'app';
+      if (path === '/how-it-works') return 'how';
       if (path === '/limitations') return 'limitations';
       if (path === '/contributing') return 'contrib';
       return 'home';
@@ -564,6 +565,7 @@ function App() {
         <nav>
           <a href="/" className={page === 'home' ? 'active' : ''} onClick={(e) => { e.preventDefault(); navigateTo('home'); }}>Home</a>
           <a href="/analyzer" className={page === 'app' ? 'active' : ''} onClick={(e) => { e.preventDefault(); navigateTo('app'); }}>Analyzer</a>
+          <a href="/how-it-works" className={page === 'how' ? 'active' : ''} onClick={(e) => { e.preventDefault(); navigateTo('how'); }}>How it works</a>
           <a href="/limitations" className={page === 'limitations' ? 'active' : ''} onClick={(e) => { e.preventDefault(); navigateTo('limitations'); }}>Limitations</a>
           <a href="/contributing" className={page === 'contrib' ? 'active' : ''} onClick={(e) => { e.preventDefault(); navigateTo('contrib'); }}>Contributing</a>
         </nav>
@@ -603,6 +605,8 @@ function App() {
         />
       ) : page === 'limitations' ? (
         <LimitationsPage />
+      ) : page === 'how' ? (
+        <HowItWorksPage />
       ) : page === 'contrib' ? (
         <ContributingPage />
       ) : (
@@ -690,6 +694,7 @@ function TrashIcon() { return <svg viewBox="0 0 24 24" aria-hidden="true"><path 
 
 function Home({ openApp }) {
   const heroRef = useReveal();
+  const [openFeature, setOpenFeature] = useState(null);
   useEffect(() => {
     const timer = window.setTimeout(() => heroRef.current?.classList.add('is-visible'), 80);
     return () => window.clearTimeout(timer);
@@ -708,27 +713,69 @@ function Home({ openApp }) {
           <h2>WHAT IT MEASURES</h2>
         </div>
         <div className="feature-grid">
-          {['Image statistics', 'Channel statistics', 'Brightness & luminance', 'Contrast & sharpness', 'Colorfulness & entropy', 'Exposure analysis', 'Histogram regions', 'Dominant colors', 'Duplicate detection'].map((title, index) => (
-            <article className="feature" key={title}>
+          {[
+            ['Image statistics', 'Counts the pixels, notes the data type, and works out the mean, spread, and range of every image. Handy as a first pass before digging into anything fancier.'],
+            ['Channel statistics', 'Runs the same numbers separately for red, green, and blue. If a photo looks off, this usually tells you which channel is dragging it down.'],
+            ['Brightness & luminance', 'Gives a plain brightness score plus a luminance-weighted one that accounts for how the eye reads colour. A dark photo scores low before you even see it.'],
+            ['Contrast & sharpness', 'Contrast comes from how far the luminance values spread out. Sharpness is measured with a Laplacian, so blurry shots stand out quickly.'],
+            ['Colorfulness & entropy', 'Colorfulness is a rough proxy for how much colour variation is going on. Entropy measures how busy the pixel distribution is, a decent stand-in for detail.'],
+            ['Exposure analysis', 'Tells you what share of pixels sit in the underexposed and overexposed zones. Useful when a picture technically loads but looks washed out or crushed.'],
+            ['Histogram regions', 'Splits each channel histogram into dark, mid, and bright bands and reports the percentage sitting in each. Skewed images show up immediately.'],
+            ['Dominant colors', 'Pulls out the top colours with their RGB values and the share of pixels they cover. Good for palettes, thumbnails, and quick sorting of a folder.'],
+            ['Duplicate detection', 'Hashes every file with SHA-256 and flags exact matches. Byte-identical copies get caught every time; resized versions will not, since the hash changes.'],
+          ].map(([title, body], index) => (
+            <article
+              className={`feature feature-collapsible${openFeature === index ? ' is-open' : ''}`}
+              key={title}
+              role="button"
+              tabIndex={0}
+              aria-expanded={openFeature === index}
+              onClick={() => setOpenFeature(openFeature === index ? null : index)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setOpenFeature(openFeature === index ? null : index);
+                }
+              }}
+            >
               <span>0{index + 1}</span>
               <h3>{title}</h3>
-              <p>{['Dimensions, data type, mean, standard deviation, min, and max values.', 'Per-channel mean, standard deviation, min, and max for red, green, and blue.', 'Mean brightness and luminance-weighted brightness scores.', 'Contrast score from luminance spread and sharpness from Laplacian variance.', 'Colorfulness proxy from channel range and entropy from pixel distribution.', 'Percentage of underexposed and overexposed pixels in the image.', 'Dark, mid, and bright region percentages from per-channel histograms.', 'Top dominant colors with RGB values and pixel share percentages.', 'SHA-256 hash-based exact duplicate detection across images.'][index]}</p>
+              <p className="feature-hint">{openFeature === index ? 'Click to close' : 'Click to see details'}</p>
+              <div className="feature-body"><p>{body}</p></div>
             </article>
           ))}
         </div>
       </section>
-      <section className="limitations" id="limitations">
-        <p className="eyebrow">A CLEAR-EYED NOTE</p>
-        <h2>What LUMEN does not do.</h2>
-        <ul>
-          <li>Duplicate detection is exact-hash only; resized or recompressed near-duplicates are not found.</li>
-          <li>Its colorfulness score is a simplified proxy, not the standard CV literature metric.</li>
-          <li>There is no historical versioning: re-analysis overwrites a record.</li>
-          <li>Compare is metric-based, not a visual or perceptual image comparison.</li>
-        </ul>
-        <p className="portfolio-note">This is currently a learning and portfolio-stage project, not production-ready software.</p>
-      </section>
     </>
+  );
+}
+
+// Standalone How it works page at /how-it-works explaining the analysis pipeline.
+function HowItWorksPage() {
+  return (
+    <main className="content-section">
+      <div className="section-head">
+        <p className="eyebrow">HOW IT WORKS</p>
+        <h2>From upload to insight, step by step.</h2>
+      </div>
+      <div className="feature-grid">
+        {[
+          ['Load', 'Any image (PNG, JPG, JPEG, BMP, GIF) is opened with Pillow and converted to an RGB NumPy array before analysis begins.'],
+          ['Analyze', 'A single-image pipeline (analyzer.py) computes per-image and per-channel statistics, quality metrics, histograms, dominant colors, and a SHA-256 hash.'],
+          ['Scale', 'The CLI scans a folder and runs that pipeline across CPU cores in parallel with ProcessPoolExecutor for fast batch analysis of large collections.'],
+          ['Persist', 'Results export to CSV or JSON and optionally save to PostgreSQL, with idempotent upserts so re-running never creates duplicate rows.'],
+          ['Serve', 'A FastAPI REST API exposes the same analysis over HTTP: upload an image, list the gallery, compare images, and inspect stored reports.'],
+          ['Compare', 'This dashboard queries the API to browse analyzed images, compare metrics side by side with win/loss markers, and surface duplicate groups.'],
+        ].map(([title, body], index) => (
+          <article className="feature" key={title}>
+            <span>0{index + 1}</span>
+            <h3>{title}</h3>
+            <p>{body}</p>
+          </article>
+        ))}
+      </div>
+      <p style={{ marginTop: 24 }}><a href="/" onClick={(e) => { e.preventDefault(); window.history.pushState({}, '', '/'); window.dispatchEvent(new PopStateEvent('popstate')); }}>Back to home</a></p>
+    </main>
   );
 }
 
