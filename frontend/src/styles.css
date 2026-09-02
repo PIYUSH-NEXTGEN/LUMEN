@@ -1,25 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono&family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;0,800;1,700;1,800&family=Shippori+Mincho:wght@700;800&family=Zen+Kaku+Gothic+New:wght@700;800;900&family=Noto+Serif+JP:wght@700;800;900&display=swap');
-/* Local brush-style Japanese display font (Katsuno Japan Demo by Yoga Letter,
-   1001Fonts FFP — free for personal use only; commercial use requires the
-   author's permission / $15 license. Demo charset is Latin letters + accents
-   only, so digits/punctuation and IJ/Devanagari fall back to Noto Serif JP).
-   The weight range (100-900) makes the browser use the only existing cut
-   at ANY requested weight WITHOUT synthetic bolding, keeping the brush
-   strokes clean at heading sizes. */
-@font-face {
-  font-family: 'Katsuno Japan';
-  src: url('/fonts/katsuno-japan-demo.ttf') format('truetype');
-  font-weight: 100 900;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Katsuno Japan';
-  src: url('/fonts/katsuno-japan-italic-demo.ttf') format('truetype');
-  font-weight: 100 900;
-  font-style: italic;
-  font-display: swap;
-}
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Playfair+Display:ital,wght@0,700;0,800;1,700;1,800&display=swap');
 
 /* Global Reset & Base Setup */
 * {
@@ -41,13 +20,12 @@
   background-color: #ffffff;
 }
 
-/* Headings use a brush-stroked, Asian-style display font (Latin + CJK).
-   Individual component rules below can override the family without
-   changing the stack. */
+/* Headings use Playfair Display italic for a simple, clean look. */
 h1,
 h2,
 h3 {
-  font-family: 'Katsuno Japan', 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-style: italic;
 }
 
 /* Solid White Canvas Background Layer */
@@ -249,7 +227,7 @@ nav .active::after,
 }
 
 .eyebrow {
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', Arial, sans-serif;
   font-size: 0.68rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -289,18 +267,19 @@ nav .active::after,
 }
 
 .brand-en {
-  font-family: 'Katsuno Japan', 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
-  font-weight: 400;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-style: italic;
+  font-weight: 800;
 }
 
 .brand-ja {
-  font-family: 'Shippori Mincho', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  font-family: 'DM Sans', Arial, sans-serif;
   font-weight: 800;
   letter-spacing: 0.12em;
 }
 
 .brand-hi {
-  font-family: 'Noto Sans Devanagari', 'Shippori Mincho', serif;
+  font-family: 'DM Sans', Arial, sans-serif;
   font-weight: 800;
 }
 
@@ -408,7 +387,6 @@ nav .active::after,
   line-height: 1.25;
   color: #000000;
   margin: 0;
-  font-family: 'Katsuno Japan', 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
   font-weight: 800;
 }
 
@@ -465,7 +443,7 @@ nav .active::after,
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.12);
   color: #6B3012;
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', Arial, sans-serif;
   font-size: 0.72rem;
   font-weight: 700;
   border: 1px solid rgba(0, 0, 0, 0.3);
@@ -473,7 +451,6 @@ nav .active::after,
 }
 
 .feature h3 {
-  font-family: 'Katsuno Japan', 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
   font-size: 1.02rem;
   font-weight: 800;
   line-height: 1.25;
@@ -528,7 +505,7 @@ nav .active::after,
   content: '—';
   color: #000000;
   font-weight: 800;
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', Arial, sans-serif;
 }
 
 .portfolio-note {
@@ -555,7 +532,6 @@ nav .active::after,
   color: #000000;
   margin: 0 0 20px;
   font-weight: 800;
-  font-family: 'Katsuno Japan', 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
 }
 
 .app-intro em {
@@ -610,7 +586,6 @@ nav .active::after,
 .upload-box h2,
 .analysis-card h2 {
   font-size: 1.08rem;
-  font-family: 'Katsuno Japan', 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
   color: #000000;
   font-weight: 800;
   margin: 13px 0 5px;
@@ -662,7 +637,6 @@ nav .active::after,
 
 .report h2 {
   font-size: 0.95rem;
-  font-family: 'DM Sans', 'Noto Serif JP', sans-serif;
   font-weight: 600;
   color: #000000;
   white-space: nowrap;
@@ -677,7 +651,6 @@ nav .active::after,
 }
 
 .report-section h3 {
-  font-family: 'DM Mono', monospace;
   font-size: 0.68rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -706,7 +679,7 @@ nav .active::after,
 }
 
 .metric-list strong {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'DM Sans', Arial, sans-serif;
   font-size: 0.9rem;
   color: #000000;
   font-weight: 800;
@@ -792,7 +765,7 @@ nav .active::after,
 }
 
 .histogram-row small {
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', Arial, sans-serif;
   font-size: 0.6rem;
   color: #000000;
   text-align: right;
@@ -847,7 +820,7 @@ nav .active::after,
 }
 
 .color-item small {
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', Arial, sans-serif;
   font-size: 0.6rem;
   color: #000000;
   font-weight: 500;
@@ -994,7 +967,7 @@ nav .active::after,
 }
 
 .page-status {
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', Arial, sans-serif;
   font-size: 0.68rem;
   color: #000000;
   font-weight: 600;
@@ -1107,7 +1080,7 @@ nav .active::after,
 }
 
 .card-dimensions {
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', Arial, sans-serif;
   font-size: 0.65rem !important;
   color: #000000 !important;
   margin-top: 6px !important;
@@ -1183,9 +1156,8 @@ nav .active::after,
   place-items: center;
   background: #efefef;
   color: #000000;
-  font-family: 'Playfair Display', Georgia, serif;
-  font-style: italic;
-  font-weight: 800;
+  font-family: 'DM Sans', Arial, sans-serif;
+  font-weight: 700;
   font-size: 1.35rem;
   border-radius: 4px;
   margin-top: 28px;
@@ -1193,7 +1165,7 @@ nav .active::after,
 
 .image-card h3 {
   font-size: 0.84rem;
-  font-family: 'DM Sans', 'Noto Serif JP', sans-serif;
+  font-family: 'DM Sans', Arial, sans-serif;
   font-weight: 600;
   color: #000000;
   margin: 20px 0 4px;
@@ -1203,7 +1175,7 @@ nav .active::after,
 }
 
 .image-card p {
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', Arial, sans-serif;
   font-size: 0.67rem;
   color: #000000;
   margin: 0;
@@ -1344,7 +1316,7 @@ nav .active::after,
 }
 
 .stat-label {
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', Arial, sans-serif;
   font-size: 0.62rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1353,7 +1325,7 @@ nav .active::after,
 }
 
 .stat-value {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'DM Sans', Arial, sans-serif;
   font-size: 1rem;
   color: #000000;
   font-weight: 800;
@@ -1386,7 +1358,7 @@ nav .active::after,
   border-radius: 50%;
   background: transparent;
   color: #6B3012;
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', Arial, sans-serif;
   font-size: 9px;
   line-height: 1;
   display: inline-flex;
@@ -1476,7 +1448,7 @@ td:first-child {
 
 th {
   font-size: 0.75rem;
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', Arial, sans-serif;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: #000000;
@@ -1504,7 +1476,7 @@ td.diff-worst {
 
 .diff-mark {
   margin-left: 6px;
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', Arial, sans-serif;
   font-size: 0.78em;
   font-weight: 700;
 }
@@ -1549,7 +1521,7 @@ td.diff-worst {
 }
 
 .duplicate-group span {
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', Arial, sans-serif;
   font-size: 0.67rem;
   color: #000000;
   margin-right: 12px;
@@ -1557,7 +1529,7 @@ td.diff-worst {
 }
 
 .duplicate-group code {
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', Arial, sans-serif;
   font-size: 0.72rem;
   word-break: break-all;
   color: #000000;
@@ -1587,7 +1559,7 @@ td.diff-worst {
   flex-direction: column;
   gap: 38px;
   text-align: left !important;
-  font-family: 'DM Mono', monospace !important;
+  font-family: 'DM Sans', Arial, sans-serif !important;
   font-size: 0.72rem !important;
   color: #000000 !important;
   font-weight: 500;
@@ -1661,7 +1633,7 @@ td.diff-worst {
 
 .footer-col h4 {
   margin: 0 0 6px;
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', Arial, sans-serif;
   font-size: 0.64rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -1770,7 +1742,7 @@ td.diff-worst {
 
 .tour-step {
   margin: 0 0 6px;
-  font-family: 'DM Mono', monospace;
+  font-family: 'DM Sans', Arial, sans-serif;
   font-size: 0.62rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -1780,7 +1752,6 @@ td.diff-worst {
 
 .tour-card h3 {
   margin: 0 0 6px;
-  font-family: 'Katsuno Japan', 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
   font-size: 0.98rem;
   color: #000000;
   font-weight: 800;
@@ -1850,7 +1821,6 @@ td.diff-worst {
 }
 
 .error-boundary h2 {
-  font-family: 'Katsuno Japan', 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
   color: #000000;
   margin: 0 0 10px;
 }

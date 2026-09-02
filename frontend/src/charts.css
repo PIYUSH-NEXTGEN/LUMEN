@@ -16,7 +16,7 @@
   flex-direction: column;
   justify-content: space-between;
   padding: 0 5px 17px 0;
-  font: 9px 'DM Mono', monospace;
+  font: 9px 'DM Sans', Arial, sans-serif;
   color: #000000;
   text-align: right;
 }
@@ -43,7 +43,7 @@
   position: absolute;
   bottom: 0;
   text-transform: uppercase;
-  font: 9px 'DM Mono', monospace;
+  font: 9px 'DM Sans', Arial, sans-serif;
   color: #000000;
   font-weight: 700;
 }
@@ -119,7 +119,7 @@
 }
 
 .dominant-bar b {
-  font: 9px 'DM Mono', monospace;
+  font: 9px 'DM Sans', Arial, sans-serif;
   text-align: right;
   color: #000000;
 }
