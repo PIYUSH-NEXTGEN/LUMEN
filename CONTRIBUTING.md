@@ -1,6 +1,6 @@
 # Contributing to LUMEN
 
-Thanks for your interest in improving LUMEN — an image analysis tool usable as a CLI, a REST API, and a small React frontend. This guide covers setting up a development environment, the project's coding style expectations, and how to submit changes or report problems.
+Thanks for your interest in improving LUMEN — an image analysis tool usable as a CLI, a REST API, and a React dashboard. This guide covers setting up a development environment, the project's coding style expectations, and how to submit changes or report problems.
 
 ## Development environment
 
@@ -60,9 +60,10 @@ If you have [ruff](https://github.com/astral-sh/ruff) installed, `ruff check .` 
 ### JavaScript / React (frontend)
 
 - **Function components and hooks only** — no class components (the one exception is the top-level `ErrorBoundary`, which React requires to be a class), no new UI libraries.
-- Components currently live in `frontend/src/main.jsx`; keep new components there unless the file is being deliberately split.
+- The whole dashboard lives in `frontend/src/main.jsx`: the app shell, client-side routing via the History API (home, analyzer, how-it-works, limitations, contributing), the analyzer with its upload box and gallery, comparison, modals, toasts, and the guided tour. Keep new components there unless the file is being deliberately split.
 - Styles are plain CSS in `styles.css` / `charts.css` with kebab-case class names. The frontend is light-theme only (dark mode was removed by design), and animations should respect `prefers-reduced-motion`.
 - Keep user-facing strings plain-English and friendly; metric explanations should avoid jargon (see `metricDescriptions` in `main.jsx` for the established tone).
+- If you change analyzer UI affordances, update the matching copy so things don't drift: the guided-tour steps in `tourSteps`, the How It Works page prose, and the Limitations page.
 
 ### Commits
 
@@ -75,7 +76,7 @@ Short imperative subjects with a conventional prefix, matching existing history:
 2. Keep PRs small and focused — one feature or one fix per PR.
 3. If you change the API (new params, response shapes, limits), **update the README** endpoint table and any affected frontend code in the same PR.
 4. Make sure `pytest` and `cd frontend && npm run build` pass.
-5. For UI changes, include before/after screenshots (and check the dark theme).
+5. For UI changes, include before/after screenshots and check narrow/mobile widths (the theme is light-only).
 6. Open the PR against `main` with a short "what / why" description and link any related issues.
 
 ## Reporting bugs

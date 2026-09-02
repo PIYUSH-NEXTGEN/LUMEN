@@ -1,25 +1,27 @@
 # LUMEN v3
 
-LUMEN is an image analysis tool  usable as a CLI or a REST API that computes per-image and per-channel statistics, image-quality metrics (brightness, contrast, sharpness, colorfulness, entropy), dominant colors, and exact-duplicate detection, with optional persistence to PostgreSQL and export to CSV/JSON.
+LUMEN is an image analysis tool usable as a CLI, a REST API, and a web dashboard. It computes per-image and per-channel statistics, image-quality metrics (brightness, contrast, sharpness, colorfulness, entropy, exposure), dominant colors, and exact-duplicate detection — with optional persistence to PostgreSQL and export to CSV/JSON. The React dashboard lets you upload images, browse a searchable gallery, and compare images side by side.
 
 ### Stack
 - **Language:** Python 3.9+
 - **Core libraries:** numpy, pandas, pillow (PIL), pydantic, typer
 - **API:** FastAPI, uvicorn
 - **Persistence:** PostgreSQL, SQLAlchemy, psycopg2, python-dotenv
-- **Testing:** pytest
+- **Frontend:** React 19, Vite, plain CSS (no UI libraries)
+- **Testing:** pytest (Python) and `npm run build` (frontend)
 
 ## Features
 - Load common image formats (PNG, JPG, JPEG, BMP, GIF)
 - Per-image statistics (shape, dtype, mean, std, min, max) and per-channel histograms
-- Image quality metrics: luminance brightness, contrast, sharpness (Laplacian variance), colorfulness, entropy, exposure (under/overexposed %)
+- Image quality metrics: luminance brightness, contrast, sharpness (Laplacian variance), colorfulness, entropy, exposure (under/overexposed %), plus aspect ratio, megapixels, mean saturation, and warm/cool bias
 - Dominant color extraction
 - Exact-file duplicate detection (SHA-256)
 - CSV and JSON exports suitable for analysis or reporting
 - Parallelized batch processing across CPU cores for faster analysis of large folders
 - Analyzed images and duplicate groups persist to PostgreSQL, safely re-run without creating duplicate rows
 - REST API for uploading and querying analysis results (via FastAPI)
-- Web comparison view (in `frontend/`) with per-metric win/loss markers — ↑ leads / ↓ trails with colour coding — across all stats, including saturation, exposure (under/overexposed %), and aspect ratio
+- Web dashboard (`frontend/`) for uploading images (with separate Analyze and Save actions), browsing a searchable, paginated gallery, comparing images side by side with per-metric win/loss markers — ↑ leads / ↓ trails with colour coding — inspecting full reports, and deleting records
+- Guided first-visit tour of the analyzer, plus dedicated How It Works, Limitations, and Contributing pages
 
 ## Project layout
 ```
@@ -41,11 +43,16 @@ image_analyzer/            - core package
     connection.py                 - SQLAlchemy engine/session, save/upsert logic
     models.py                      - SQLAlchemy ORM table definitions
     create_tables.py               - one-time table creation script
+frontend/                   - React dashboard (Vite)
+  src/main.jsx                - entire dashboard: routing, analyzer, gallery, comparison, and the How It Works / Limitations / Contributing pages
+  src/styles.css               - main stylesheet (plain CSS, light theme)
+  src/charts.css                - chart and report styling
+  .env.example                  - VITE_API_BASE_URL template
 test/                       - pytest suite (stats, image quality, duplicates, DB round-trip)
 LICENSE
 ```
 
-**How it fits together:** `analyzer.py` holds the core single-image analysis pipeline. The CLI (`main.py`) scans a folder, runs that pipeline across images in parallel via `ProcessPoolExecutor`, optionally persists results to PostgreSQL, and writes CSV/JSON. The API (`api.py`) exposes the same analysis over HTTP, plus endpoints for listing, comparing, and inspecting previously analyzed images stored in the database.
+**How it fits together:** `analyzer.py` holds the core single-image analysis pipeline. The CLI (`main.py`) scans a folder, runs that pipeline across images in parallel via `ProcessPoolExecutor`, optionally persists results to PostgreSQL, and writes CSV/JSON. The API (`api.py`) exposes the same analysis over HTTP, plus endpoints for listing, comparing, and inspecting previously analyzed images stored in the database. The React dashboard (`frontend/`) is a client of that API: it uploads images, browses the saved gallery, compares metrics side by side, and manages records.
 
 ---
 
@@ -156,6 +163,21 @@ Invalid uploads and malformed requests return clean `400`/`404` errors with a de
 
 `POST /analyze` rejects files larger than **50 MB** with an HTTP 413 response (see `config.MAX_UPLOAD_MB`), and the web frontend checks the size before uploading. `/images` is paginated so large galleries are never fetched in one unbounded response.
 
+Passing `?save_db=true` persists the result; without it the image is analyzed and returned but nothing is stored. The dashboard exposes these as two separate buttons — **Analyze** (report only) and **Save to gallery** (analyze + persist).
+
+---
+
+## Usage — Web dashboard
+
+```bash
+cd frontend
+npm install
+npm run dev       # dev server; talks to http://localhost:8000 by default
+npm run build     # production build into dist/
+```
+
+Point the dashboard at a different API by setting `VITE_API_BASE_URL` (see `frontend/.env.example`). Features: image upload with client-side size validation, separate Analyze / Save actions, a paginated and searchable gallery, side-by-side metric comparison with win/loss markers, full report inspection, record deletion, and a first-visit guided tour. Gallery features require the API to have PostgreSQL configured.
+
 ---
 
 ## Configuration (defaults)
@@ -185,16 +207,19 @@ pytest -v
 ```
 The suite covers image statistics, quality metrics, duplicate detection, and a PostgreSQL round-trip test. The database test automatically skips (rather than fails) if PostgreSQL isn't configured, so the full suite still runs cleanly without a database set up.
 
+For the frontend, `cd frontend && npm run build` verifies the React app compiles cleanly.
+
 ## Troubleshooting
 - **"Folder does not exist or is not a directory"** — confirm the `--folder` path is correct and points to a real directory.
 - **"Cannot connect to database"** — only relevant when using `--save-db`; check your `.env` values and that PostgreSQL is running. The CLI fails immediately with this message rather than attempting analysis first.
+- **Dashboard shows no gallery / saves fail** — the API needs PostgreSQL configured (see setup step 3) for persistence features; analysis without saving works regardless.
 - Corrupt or unreadable images are logged and skipped (CLI) or return a clean `400` error (API); the analyzer continues with the remaining files in the folder.
 
 ## Limitations
 - **Duplicate detection** currently uses exact byte-level hashing (SHA-256). It detects identical files only — a resized, recompressed, or re-saved copy of the same photo will *not* be flagged, since any byte change produces a different hash. Perceptual/near-duplicate hashing (e.g. average hash) is a possible future improvement.
+- **No content understanding** — LUMEN measures pixels; it does not recognize objects, scenes, or people, and produces no captions or tags.
+- **No EXIF metadata** — camera model, lens, exposure settings, GPS, and timestamps are never read; only pixel data is analyzed.
 - **Colorfulness score** is a simplified metric based on per-pixel max−min channel range. It is *not* the standard Hasler–Süsstrunk colorfulness metric used in computer vision literature, but a lightweight proxy for relative color variation.
+- **Comparison is metric-based** — side-by-side numbers with win/loss markers, not perceptual or visual similarity.
 - Database persistence stores the current state per file path only (no historical versioning) — re-analyzing a file updates its existing row rather than preserving prior analysis runs.
 
-## Next updates
-- Web frontend for upload, browsing, and visual comparison
-- Deployed, publicly accessible version

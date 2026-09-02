@@ -9,7 +9,7 @@ const GALLERY_PAGE_SIZE = 12;  // page size for the saved-records gallery
 const TOUR_KEY = 'lumen-tour-done';
 const tourSteps = [
   { id: 'upload', title: 'Upload', text: 'Drop a PNG, JPEG, or WebP here — or click the box to browse your device.' },
-  { id: 'analyze', title: 'Analyze & save', text: 'Runs the full quality analysis and saves the record to your gallery below.' },
+  { id: 'analyze', title: 'Analyze', text: 'Runs the full quality analysis. Use "Save to gallery" beside it when you want to keep the record.' },
   { id: 'gallery', title: 'Gallery — select', text: 'Every saved record lives here. Tick the checkbox on a card to select it for comparison.' },
   { id: 'compare', title: 'Compare', text: 'Select two or more records, then compare their metrics side by side.' },
 ];
