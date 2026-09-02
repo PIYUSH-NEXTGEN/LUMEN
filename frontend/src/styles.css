@@ -97,12 +97,7 @@ h3 {
   background: rgba(255,255,255,0.12);
   pointer-events: none;
 }
-}
 
-/* Remove broad translucent wash overlay — keep the artwork clearly visible.
-   If a subtle wash is ever needed, set --background-wash in :root and apply it
-   explicitly instead of a persistent white overlay. */
-.global-background::after { content: none; }
 
 .site {
   position: relative;
