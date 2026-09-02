@@ -31,8 +31,6 @@
   color: #000000;
   line-height: 1.5;
   font-weight: 400;
-  /* Theme variables (override these at runtime when swapping the background artwork) */
-  --bg-image: url('/images/background.jpg'); /* relative to the built site public folder */
   --panel-1: #F4E8DB; /* editorial warm cream */
   --panel-2: #D9C6B0; /* sand */
   --panel-3: #6B8A80; /* muted blue/green accent */
@@ -54,21 +52,15 @@ h3 {
 
 /* Solid White Canvas Background Layer */
 .global-background {
-  /* Continuous single artwork behind the site. The image is set via --bg-image.
-     Use background-size: auto 100vh to prioritize showing the full image vertically
-     (avoid cover which crops important vertical content). Fixed attachment keeps
-     the artwork as one continuous artwork while content scrolls above it. */
-  /* Position absolute so the background can be placed at the hero's top and
-     scroll with the page. top is set at runtime to the hero's offset. */
+  /* Position absolute so the background can sit behind the page content. */
   position: absolute;
   left: 0;
   right: 0;
-  top: 0; /* runtime will update this to hero offset */
+  top: 0;
   bottom: 0;
   width: 100%;
   z-index: 0; /* sit behind content but above the page background */
   pointer-events: none;
-  background-image: var(--bg-image);
   background-position: center top;
   background-repeat: no-repeat;
   background-attachment: scroll; /* scrolls with the document */
