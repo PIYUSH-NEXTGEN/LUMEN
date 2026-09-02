@@ -1,5 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap');
 
+
+
 /* Global Reset & Base Setup */
 * {
   box-sizing: border-box;
@@ -173,7 +175,7 @@ header {
   margin-right: 8px;
 }
 
-nav {
+header nav {
   display: flex;
   align-items: center;
   gap: 24px;
@@ -1640,21 +1642,6 @@ td.diff-worst {
   font-weight: 500;
 }
 
-.footer-how {
-  color: #000000;
-  text-decoration: none;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.4);
-  padding-bottom: 2px;
-  transition: color 0.2s ease, border-color 0.2s ease;
-}
-
-.footer-how:hover {
-  color: #000000;
-  border-color: #000000;
-}
-
 .footer-cols {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1664,13 +1651,15 @@ td.diff-worst {
 
 .footer-col {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px 22px;
 }
 
 .footer-col h4 {
-  margin: 0 0 6px;
+  flex-basis: 100%;
+  margin: 0;
   font-family: 'DM Sans', Arial, sans-serif;
   font-size: 0.64rem;
   letter-spacing: 0.16em;
@@ -1707,34 +1696,52 @@ td.diff-worst {
   stroke-linejoin: round;
 }
 
-.footer-stack {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+/* The official GitHub mark is a solid fill glyph, not a stroke outline */
+.footer-col svg.icon-github {
+  fill: currentColor;
+  stroke: none;
 }
 
-.stack-badge {
+/* Floating back-to-top button (appears after scrolling down) */
+.back-to-top {
+  position: fixed;
+  left: 26px;
+  bottom: 26px;
+  z-index: 120;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  background: #ffffff;
+  color: #000000;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
-  padding: 6px 13px;
-  border: 1px solid rgba(0, 0, 0, 0.3);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.9);
-  color: #000000;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-size: 0.66rem;
+  justify-content: center;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+  animation: back-to-top-in 0.25s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
-.footer-col-note {
-  margin: 8px 0 0;
-  font-family: 'DM Sans', Arial, sans-serif;
-  font-size: 0.82rem;
-  line-height: 1.6;
-  color: #000000;
-  max-width: 280px;
+.back-to-top:hover {
+  transform: translateY(-3px);
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.26);
+}
+
+.back-to-top svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@keyframes back-to-top-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .footer-bottom {
@@ -1745,6 +1752,41 @@ td.diff-worst {
   flex-wrap: wrap;
   padding-top: 24px;
   border-top: 1px solid rgba(0, 0, 0, 0.14);
+}
+
+.footer-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px 20px;
+  flex-wrap: wrap;
+}
+
+.footer-meta svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.footer-star {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #000000;
+  text-decoration: none;
+  font-weight: 600;
+  padding: 2px 0;
+  border-bottom: 1px solid transparent;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.footer-star:hover {
+  color: #000000;
+  border-bottom-color: rgba(0, 0, 0, 0.45);
 }
 
 /* Guided tour */

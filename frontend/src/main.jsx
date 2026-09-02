@@ -288,6 +288,15 @@ function App() {
   const [page, setPage] = useState('home');
   const [pendingScroll, setPendingScroll] = useState(null);
   const [tourStep, setTourStep] = useState(null);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+
+  // Reveal the floating back-to-top button once the user scrolls down.
+  useEffect(() => {
+    const onScroll = () => setShowBackToTop(window.scrollY > 400);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
   const [images, setImages] = useState([]);
   const [selected, setSelected] = useState([]);
   const [compare, setCompare] = useState([]);
@@ -633,45 +642,45 @@ function App() {
         <div className="footer-top">
           <div className="footer-brand">
             <span className="footer-wordmark">LUMEN</span>
-            <p className="footer-tagline">
-              Image analysis, made legible — quality metrics, channel statistics, histograms,
-              dominant colours, and exact-hash duplicate detection, through a CLI, a REST API, and this dashboard.
-            </p>
-            <a
-              className="footer-how"
-              href="https://github.com/PIYUSH-NEXTGEN/LUMEN#project-layout"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              How it works →
-            </a>
+            <p className="footer-tagline">Image Quality &amp; Metadata Analysis Engine</p>
           </div>
           <div className="footer-cols">
-            <nav className="footer-col" aria-label="Project links">
-              <h4>Project</h4>
-              <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN" target="_blank" rel="noopener noreferrer"><GitHubIcon />GitHub</a>
-              <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN#readme" target="_blank" rel="noopener noreferrer"><BookIcon />Docs / README</a>
-              <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">License</a>
-              <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN/issues" target="_blank" rel="noopener noreferrer"><FlagIcon />Report an issue / Contribute</a>
+            <nav className="footer-col" aria-label="Footer navigation">
+              <h4>Navigation</h4>
+              <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN" target="_blank" rel="noopener noreferrer"><GitHubIcon />GitHub Repository</a>
             </nav>
-            <div className="footer-col">
-              <h4>Built with</h4>
-              <div className="footer-stack">
-                <span className="stack-badge">React</span>
-                <span className="stack-badge">FastAPI</span>
-                <span className="stack-badge">PostgreSQL</span>
-              </div>
-              <p className="footer-col-note">
-                Core analysis runs on NumPy &amp; Pillow. Results persist to CSV, JSON, or PostgreSQL.
-              </p>
-            </div>
+            <nav className="footer-col" aria-label="Community and support">
+              <h4>Community &amp; Support</h4>
+              <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer"><HeartIcon />Contributing</a>
+              <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN/issues" target="_blank" rel="noopener noreferrer"><FlagIcon />Report an Issue</a>
+            </nav>
           </div>
         </div>
         <div className="footer-bottom">
-          <span>LUMEN — built as a learning project</span>
-          <span>© 2026</span>
+          <span>© 2026 Built with FastAPI, PostgreSQL &amp; React</span>
+          <div className="footer-meta">
+            <a
+              className="footer-star"
+              href="https://github.com/PIYUSH-NEXTGEN/LUMEN"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <StarIcon />Like LUMEN? Give it a star on GitHub
+            </a>
+          </div>
         </div>
       </footer>
+      {showBackToTop && (
+        <button
+          type="button"
+          className="back-to-top"
+          aria-label="Back to top"
+          title="Back to top"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        >
+          <ArrowUpIcon />
+        </button>
+      )}
       <div className="toast-stack" aria-live="polite">
         {toasts.map(toast => (
           <div key={toast.id} className={`toast toast-${toast.kind}`} role="status">
@@ -687,10 +696,18 @@ function App() {
   );
 }
 
-function GitHubIcon() { return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 22v-3.87c3.07.67 6-1.13 6-5.13 0-1.2-.43-2.2-1.13-3 .12-.7.02-1.5-.1-2.1-.7-.22-1.45.05-2.05.52A7.05 7.05 0 0 0 12 8c-2.05 0-3.93.53-5.72 1.42-.6-.47-1.35-.74-2.05-.52-.12.6-.22 1.4-.1 2.1A4.98 4.98 0 0 0 3 14c0 4 2.93 5.8 6 5.13V22" /><path d="M9 18c-3 .9-3-1.5-4.2-1.8" /></svg>; }
-function BookIcon() { return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v17H6.5A2.5 2.5 0 0 0 4 21.5z" /><path d="M4 4.5v17M8 6h8" /></svg>; }
+function GitHubIcon() {
+  return (
+    <svg className="icon-github" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+    </svg>
+  );
+}
 function FlagIcon() { return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 22V3m0 1h11l-1 4 1 4H5" /></svg>; }
 function TrashIcon() { return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m-7 4v7m4-7v7M6 7l1 12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-12" /></svg>; }
+function ArrowUpIcon() { return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5m-7 7 7-7 7 7" /></svg>; }
+function HeartIcon() { return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5C7.2 16.4 3.5 13.2 3.5 9.3c0-2.4 1.9-4.3 4.3-4.3 1.7 0 3.2 1 4.2 2.4 1-1.4 2.5-2.4 4.2-2.4 2.4 0 4.3 1.9 4.3 4.3 0 3.9-3.7 7.1-8.5 11.2z" /></svg>; }
+function StarIcon() { return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" /></svg>; }
 
 function Home({ openApp }) {
   const heroRef = useReveal();
