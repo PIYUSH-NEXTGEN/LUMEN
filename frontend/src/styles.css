@@ -32,7 +32,7 @@
   line-height: 1.5;
   font-weight: 400;
   /* Theme variables (override these at runtime when swapping the background artwork) */
-  --bg-image: url('/images/background.jpg'); /* relative to the built site public folder */
+  --bg-image: url('/background-artwork.jpg'); /* use artwork placed in frontend/public/ */
   --panel-1: #F4E8DB; /* editorial warm cream */
   --panel-2: #D9C6B0; /* sand */
   --panel-3: #6B8A80; /* muted blue/green accent */
