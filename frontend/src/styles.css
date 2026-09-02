@@ -589,9 +589,11 @@ nav .active::after,
 
 .upload-layout {
   display: grid;
-  grid-template-columns: 1.05fr 0.95fr;
+  grid-template-columns: 1fr;
   gap: 16px;
   align-items: start;
+  max-width: 760px;
+  margin: 0 auto;
 }
 
 .upload-box {

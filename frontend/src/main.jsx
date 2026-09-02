@@ -931,7 +931,7 @@ function Analyzer(props) {
     <div className="app-page">
       <section className="app-intro">
         <p className="eyebrow">WORKSPACE</p>
-        <h1>Inspect the image.<br /><em>Keep the signal.</em></h1>
+        <h1>Inspect the image.</h1>
         <p>Upload an image, save its analysis, then compare its metrics alongside other records.</p>
       </section>
       <section className="upload-layout">
