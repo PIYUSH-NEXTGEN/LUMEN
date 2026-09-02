@@ -32,7 +32,7 @@
   line-height: 1.5;
   font-weight: 400;
   /* Theme variables (override these at runtime when swapping the background artwork) */
-  --bg-image: url('/background-artwork.jpg'); /* use artwork placed in frontend/public/ */
+  --bg-image: url('/images/background.jpg'); /* relative to the built site public folder */
   --panel-1: #F4E8DB; /* editorial warm cream */
   --panel-2: #D9C6B0; /* sand */
   --panel-3: #6B8A80; /* muted blue/green accent */
@@ -68,36 +68,15 @@ h3 {
   background-position: center top;
   background-repeat: no-repeat;
   background-attachment: fixed;
-  /* Preserve image proportions vertically so full artwork remains visible.
-     Use a blurred, cover-sized copy behind to fill the left/right gutters. */
+  /* Make the image scale so its full vertical extent is visible within the viewport
+     (on very narrow screens it will letterbox horizontally). */
   background-size: auto 100vh;
 }
 
-/* Blurred side-fill and subtle lightening overlay to avoid empty gutters while
-   keeping the centered artwork's aspect ratio intact. */
-.global-background::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: var(--bg-image);
-  background-position: center center;
-  background-repeat: no-repeat;
-  background-size: cover; /* fills width so sides are not empty */
-  transform: scale(1.06);
-  filter: blur(28px) saturate(0.9);
-  opacity: 0.95;
-  pointer-events: none;
-}
-
-/* Uniform subtle lighten overlay so foreground text stays readable. */
-.global-background::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: rgba(255,255,255,0.12);
-  pointer-events: none;
-}
-
+/* Remove broad translucent wash overlay — keep the artwork clearly visible.
+   If a subtle wash is ever needed, set --background-wash in :root and apply it
+   explicitly instead of a persistent white overlay. */
+.global-background::after { content: none; }
 
 .site {
   position: relative;
@@ -282,11 +261,7 @@ nav .active::after,
   margin: 0 auto;
   padding: 120px 28px 135px;
   text-align: center;
-  position: relative;
-  z-index: 1; /* ensure hero text sits above background layers */
 }
-
-.hero h1, .hero p { text-shadow: 0 2px 6px rgba(255,255,255,0.45); }
 
 .eyebrow {
   font-family: 'DM Mono', monospace;
@@ -1079,21 +1054,11 @@ nav .active::after,
   padding: 18px;
   min-width: 0;
   position: relative;
-  transition: border-color 0.2s ease, transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  transition: border-color 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
+  border: 0;
   font: inherit;
-  color: var(--panel-text-dark);
+  color: inherit;
   cursor: default;
-  background: var(--panel-1);
-  border-radius: 10px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
-}
-
-.image-card:hover {
-  transform: translateY(-3px);
-  border-color: rgba(0, 0, 0, 0.18);
-  background: var(--panel-2);
-  box-shadow: 0 10px 26px rgba(0,0,0,0.08);
 }
 
 .card-body {
