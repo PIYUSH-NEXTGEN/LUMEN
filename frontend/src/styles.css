@@ -507,6 +507,162 @@ nav .active::after,
   margin-top: 10px;
 }
 
+/* How it works page */
+.how-page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 28px;
+}
+
+.how-page .section-head {
+  display: block;
+  margin-bottom: 24px;
+}
+
+.how-panel {
+  padding: 28px 30px;
+  margin-bottom: 28px;
+}
+
+.how-panel h3 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #000000;
+  margin: 26px 0 10px;
+}
+
+.how-panel h3:first-child {
+  margin-top: 0;
+}
+
+.how-panel p {
+  margin: 0 0 14px;
+  font-size: 0.95rem;
+  line-height: 1.75;
+  color: #000000;
+  font-weight: 500;
+}
+
+.how-panel p:last-child {
+  margin-bottom: 0;
+}
+
+.how-panel code {
+  font-family: 'DM Sans', Arial, sans-serif;
+  font-size: 0.85em;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.07);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 5px;
+  padding: 1px 5px;
+}
+
+.how-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 14px;
+}
+
+.how-list li {
+  position: relative;
+  padding: 8px 0 8px 22px;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: #000000;
+  font-weight: 500;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.how-list li:last-child {
+  border-bottom: 0;
+}
+
+.how-list li::before {
+  content: '—';
+  position: absolute;
+  left: 0;
+  color: rgba(0, 0, 0, 0.45);
+  font-weight: 700;
+}
+
+/* Pipeline flow diagram */
+.how-flow {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 26px;
+}
+
+.flow-row-label {
+  flex-basis: 100%;
+  margin: 0;
+  text-align: center;
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.55);
+  align-self: center;
+}
+
+.flow-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 14px 18px;
+  min-width: 118px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+}
+
+.flow-step strong {
+  font-size: 0.88rem;
+  color: #000000;
+}
+
+.flow-step small {
+  margin-top: 4px;
+  font-size: 0.64rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(0, 0, 0, 0.55);
+  font-weight: 700;
+}
+
+.flow-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  color: #6B3012;
+  font-size: 0.62rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.flow-arrow {
+  display: flex;
+  align-items: center;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #000000;
+}
+
+.how-back {
+  text-align: center;
+  margin: 8px 0 24px;
+}
+
 /* Solid Editorial Section Panels */
 .limitations {
   padding: 60px max(28px, calc((100% - 1124px) / 2));
@@ -675,6 +831,47 @@ nav .active::after,
 
 .analysis-card .primary {
   margin-top: 28px;
+}
+
+/* Analyze + Save button row */
+.analysis-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.analysis-actions .primary {
+  margin-top: 0;
+}
+
+.secondary-button {
+  border: 1px solid #000000;
+  background: transparent;
+  color: #000000;
+  padding: 12px 24px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+  font-family: inherit;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.secondary-button:hover {
+  background: #000000;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+}
+
+.secondary-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .report h2 {
@@ -1550,41 +1747,6 @@ td.diff-worst {
   color: #A33D2A;
 }
 
-.duplicates {
-  padding-bottom: 90px;
-}
-
-.duplicate-group {
-  padding: 18px;
-  margin-top: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.18);
-  background: #ffffff;
-  border-radius: 8px;
-}
-
-.duplicate-group span {
-  font-family: 'DM Sans', Arial, sans-serif;
-  font-size: 0.67rem;
-  color: #000000;
-  margin-right: 12px;
-  font-weight: 700;
-}
-
-.duplicate-group code {
-  font-family: 'DM Sans', Arial, sans-serif;
-  font-size: 0.72rem;
-  word-break: break-all;
-  color: #000000;
-  font-weight: 600;
-}
-
-.duplicate-group p {
-  font-size: 0.88rem;
-  margin: 8px 0 0;
-  color: #000000;
-  font-weight: 500;
-}
-
 .empty {
   font-size: 0.92rem;
   color: #000000;
@@ -1605,7 +1767,7 @@ td.diff-worst {
   font-size: 0.72rem !important;
   color: #000000 !important;
   font-weight: 500;
-  background: rgba(255, 255, 255, 0.65) !important;
+  background: var(--panel-1) !important;
   border: 1px solid rgba(0, 0, 0, 0.16);
   border-radius: 14px;
 }

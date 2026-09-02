@@ -300,7 +300,6 @@ function App() {
   const [images, setImages] = useState([]);
   const [selected, setSelected] = useState([]);
   const [compare, setCompare] = useState([]);
-  const [duplicates, setDuplicates] = useState([]);
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [report, setReport] = useState(null);
@@ -403,13 +402,6 @@ function App() {
       setGalleryLoading(false);
     }
   }, [galleryPage, galleryQuery, gallerySort, safeFetchJson]);
-  const fetchDuplicates = async () => {
-    const data = await safeFetchJson(`${API}/duplicates`);
-    setDuplicates(Array.isArray(data) ? data : []);
-  };
-  useEffect(() => {
-    if (page === 'app') fetchDuplicates().catch(error => pushToast('error', error.message));
-  }, [page, safeFetchJson]);
   useEffect(() => {
     if (page !== 'app') {
       setTourStep(current => (current == null ? current : null));
@@ -489,7 +481,7 @@ function App() {
     setPreview(URL.createObjectURL(next));
     setReport(null);
   };
-  const analyze = async () => {
+  const analyze = async ({ save = true } = {}) => {
     if (!file) return;
     if (file.size > MAX_UPLOAD_MB * 1024 * 1024) {
       pushToast('error', `That file exceeds the ${MAX_UPLOAD_MB} MB upload limit.`);
@@ -499,13 +491,16 @@ function App() {
     try {
       const form = new FormData();
       form.append('file', file);
-      const data = await safeFetchJson(`${API}/analyze?save_db=true`, { method: 'POST', body: form });
+      const data = await safeFetchJson(`${API}/analyze${save ? '?save_db=true' : ''}`, { method: 'POST', body: form });
       setReport(data);
-      const saved = await fetchSaved({ page: 0, q: '', sort: 'newest' });
-      const matching = saved.items.find(image => image.filename === data.filename);
-      if (matching) setSelected(current => (current.includes(matching.id) ? current : [...current, matching.id]));
-      await fetchDuplicates();
-      pushToast('success', 'Analysis complete and saved to the gallery.');
+      if (save) {
+        const saved = await fetchSaved({ page: 0, q: '', sort: 'newest' });
+        const matching = saved.items.find(image => image.filename === data.filename);
+        if (matching) setSelected(current => (current.includes(matching.id) ? current : [...current, matching.id]));
+        pushToast('success', 'Analysis complete and saved to the gallery.');
+      } else {
+        pushToast('success', 'Analysis complete. Save it below to add it to the gallery.');
+      }
     } catch (error) {
       pushToast('error', error.message);
     } finally {
@@ -555,7 +550,6 @@ function App() {
       setSelected(current => current.filter(x => x !== id));
       setCompare(current => current.filter(image => image.id !== id));
       if (detailId === id) closeDetail();
-      await fetchDuplicates();
       const saved = await fetchSaved();
       if (!saved.items.length && galleryPage > 0) await fetchSaved({ page: galleryPage - 1 });
       pushToast('success', 'Record deleted.');
@@ -597,7 +591,6 @@ function App() {
           }}
           selected={selected}
           compare={compare}
-          duplicates={duplicates}
           selectedNames={selectedNames}
           pickFile={pickFile}
           analyze={analyze}
@@ -770,28 +763,132 @@ function Home({ openApp }) {
 // Standalone How it works page at /how-it-works explaining the analysis pipeline.
 function HowItWorksPage() {
   return (
-    <main className="content-section">
+    <main className="how-page">
       <div className="section-head">
         <p className="eyebrow">HOW IT WORKS</p>
-        <h2>From upload to insight, step by step.</h2>
+        <h2>From pixels to numbers, in one pass.</h2>
       </div>
-      <div className="feature-grid">
-        {[
-          ['Load', 'Any image (PNG, JPG, JPEG, BMP, GIF) is opened with Pillow and converted to an RGB NumPy array before analysis begins.'],
-          ['Analyze', 'A single-image pipeline (analyzer.py) computes per-image and per-channel statistics, quality metrics, histograms, dominant colors, and a SHA-256 hash.'],
-          ['Scale', 'The CLI scans a folder and runs that pipeline across CPU cores in parallel with ProcessPoolExecutor for fast batch analysis of large collections.'],
-          ['Persist', 'Results export to CSV or JSON and optionally save to PostgreSQL, with idempotent upserts so re-running never creates duplicate rows.'],
-          ['Serve', 'A FastAPI REST API exposes the same analysis over HTTP: upload an image, list the gallery, compare images, and inspect stored reports.'],
-          ['Compare', 'This dashboard queries the API to browse analyzed images, compare metrics side by side with win/loss markers, and surface duplicate groups.'],
-        ].map(([title, body], index) => (
-          <article className="feature" key={title}>
-            <span>0{index + 1}</span>
-            <h3>{title}</h3>
-            <p>{body}</p>
-          </article>
-        ))}
+
+      <div className="panel how-panel how-intro">
+        <p>
+          LUMEN takes an image file and turns it into a small table of numbers: how bright it is,
+          how sharp, how colourful, how much of it is blown out, and whether it happens to be a
+          byte-for-byte copy of another image. This page walks through the full journey of an image
+          through the system, and explains why each piece is built the way it is.
+        </p>
       </div>
-      <p style={{ marginTop: 24 }}><a href="/" onClick={(e) => { e.preventDefault(); window.history.pushState({}, '', '/'); window.dispatchEvent(new PopStateEvent('popstate')); }}>Back to home</a></p>
+
+      <div className="how-flow" aria-label="Analysis pipeline diagram">
+        <div className="flow-step"><span className="flow-num">1</span><strong>Your image</strong><small>PNG · JPEG · BMP · GIF</small></div>
+        <div className="flow-arrow">→</div>
+        <div className="flow-step"><span className="flow-num">2</span><strong>Load</strong><small>Pillow → RGB array</small></div>
+        <div className="flow-arrow">→</div>
+        <div className="flow-step"><span className="flow-num">3</span><strong>Analyze</strong><small>NumPy pipeline</small></div>
+        <div className="flow-arrow">→</div>
+        <div className="flow-step"><span className="flow-num">4</span><strong>Report</strong><small>validated by Pydantic</small></div>
+      </div>
+      <div className="how-flow" aria-label="Where results are stored">
+        <p className="flow-row-label">The finished report can go to any of these, alone or together:</p>
+        <div className="flow-step"><strong>CSV</strong><small>flat spreadsheet rows</small></div>
+        <div className="flow-step"><strong>JSON</strong><small>full structured report</small></div>
+        <div className="flow-step"><strong>PostgreSQL</strong><small>queryable history</small></div>
+        <div className="flow-step"><strong>Dashboard</strong><small>this web app</small></div>
+      </div>
+
+      <div className="panel how-panel">
+        <h3>Step one: getting the pixels into NumPy</h3>
+        <p>
+          Everything begins with Pillow, the standard Python imaging library. It opens the file,
+          decodes the pixels, and converts them to RGB before handing the result to NumPy as a
+          plain array of integers between 0 and 255. It doesn't matter whether the source was a
+          JPEG, a PNG, a BMP or a GIF: after this point every image looks identical to the rest of
+          the code. Three channels, one shape, one set of assumptions. Grayscale files get flagged
+          in the log, because losing colour information is worth knowing about.
+        </p>
+        <p>
+          That conversion is the quiet backbone of the whole system. Once the image lives in a
+          NumPy array, every measurement that follows runs as a vectorised operation: whole arrays
+          are summed, sorted and binned inside optimised C loops instead of Python for-loops. It is
+          the difference between analysing an image in milliseconds and grinding through it pixel
+          by pixel.
+        </p>
+        <h3>Step two: what actually gets measured</h3>
+        <p>
+          Each metric earns its place by answering a question you would otherwise answer by
+          squinting at the image.
+        </p>
+        <ul className="how-list">
+          <li><strong>Brightness</strong> — the plain mean of every pixel value, plus a luminance-weighted version. The weighted one exists because eyes do not treat the three channels equally: green dominates perceived brightness, red contributes far less, blue almost nothing. Two photos with identical raw means can look very different.</li>
+          <li><strong>Contrast</strong> — the standard deviation of luminance, in other words how far the values spread out from the middle. Flat, hazy shots have a small spread; punchy ones a large one.</li>
+          <li><strong>Sharpness</strong> — the variance of a Laplacian filter response. The Laplacian reacts to edges, so a crisp photo produces strong responses while a blurry one barely twitches. The variance of that response is a well-established way to detect blur without needing a reference image.</li>
+          <li><strong>Colorfulness</strong> — the average gap between each pixel's strongest and weakest channel. This is deliberately simplified: the formal Hasler–Süsstrunk metric from the computer vision literature is heavier to compute, and for comparing images against each other the cheap proxy holds up well.</li>
+          <li><strong>Entropy</strong> — Shannon entropy over the intensity distribution, or how unpredictable a randomly picked pixel is. Flat skies score low, dense foliage scores high.</li>
+          <li><strong>Exposure</strong> — the percentage of pixels below the dark threshold and above the bright one. Useful when a photo technically loads fine but is crushed at the blacks or clipped at the whites.</li>
+          <li><strong>Bookkeeping</strong> — aspect ratio, megapixels, file size, format, mean saturation and a warm/cool bias, so the reports stay useful outside this tool too.</li>
+        </ul>
+
+        <h3>Step three: the histogram and its thresholds</h3>
+        <p>
+          Each channel gets a histogram with 256 bins, one bin per possible intensity value, so
+          nothing is smoothed away or approximated. The dark and bright thresholds (85 and 170 out
+          of 255) live in <code>config.py</code> rather than being hard-coded, which means you can
+          tune what counts as "too dark" for your collection without touching pipeline code.
+        </p>
+        <h3>Step four: duplicate detection, and its honest limits</h3>
+        <p>
+          Every file is hashed with SHA-256 over its raw bytes. That method was picked because it
+          is fast, deterministic, and has exactly zero false positives: if two files hash the same,
+          they are the same file, full stop. The trade-off is just as clear-cut. Resize a photo or
+          re-save it and the hash changes completely, so near-duplicates slip through untouched.
+          Perceptual hashing would catch those, at the cost of occasional false matches, and it is
+          the most likely future addition. Exact hashing came first because it never lies.
+        </p>
+
+        <h3>Step five: why batch analysis uses processes, not threads</h3>
+        <p>
+          The command line scans a folder and hands each image to a <code>ProcessPoolExecutor</code>,
+          which spreads the work across worker processes, one per CPU core. Threads would not help
+          here: Python's global interpreter lock means threads cannot run CPU-bound work side by
+          side, and decoding and measuring images is exactly that. Processes sidestep the lock
+          entirely. Since every image is independent of every other one, splitting a folder across
+          cores is trivial and gives close to linear speedup on large collections.
+        </p>
+
+        <h3>Step six: where the results end up</h3>
+        <p>
+          CSV gives you one flat row per image, ready for a spreadsheet or a data pipeline. JSON
+          gives you the complete structured report, duplicate groups included. Neither requires any
+          setup beyond running the command.
+        </p>
+        <p>
+          PostgreSQL is optional but worth describing. The nested results (per-channel stats,
+          histograms, dominant colour lists) are stored in JSONB columns rather than being
+          flattened into dozens of sparse table columns. JSONB was chosen because the report shape
+          keeps growing, and a schema-less column absorbs new fields without a migration every
+          time. Saves are upserts keyed on file path: analysing the same file twice updates the
+          existing row instead of piling up copies, so re-running a folder is always safe.
+        </p>
+
+        <h3>Step seven: the API and this dashboard</h3>
+        <p>
+          FastAPI ties it together. It was chosen over the alternatives for two practical reasons:
+          Pydantic models validate every report automatically, so a malformed response is caught
+          before it reaches a client, and the interactive Swagger docs at <code>/docs</code> come
+          for free. Uploads stream in 8 KB chunks and are rejected with a clean 413 the moment they
+          cross the 50 MB cap, so a careless client cannot exhaust server memory. Corrupt or
+          non-image files get a plain 400 with a readable message, not a stack trace.
+        </p>
+        <p>
+          The endpoints cover the whole workflow: <code>/analyze</code> for a single image,
+          <code> /images</code> for a paginated, searchable, sortable gallery,
+          <code> /images/&#123;id&#125;</code> for one stored report, and <code>/compare</code> for
+          side-by-side metrics. This React dashboard is nothing more than a client of those
+          endpoints: it uploads, browses, compares and deletes, and every number it shows came from
+          the same pipeline described above.
+        </p>
+      </div>
+
+      <p className="how-back"><a href="/" onClick={(e) => { e.preventDefault(); window.history.pushState({}, '', '/'); window.dispatchEvent(new PopStateEvent('popstate')); }}>Back to home</a></p>
     </main>
   );
 }
@@ -922,7 +1019,7 @@ function GuidedTour({ stepIndex, getTarget, isLast, onNext, onClose }) {
 
 function Analyzer(props) {
   const {
-    file, preview, report, loading, gallery, selected, compare, duplicates,
+    file, preview, report, loading, gallery, selected, compare,
     selectedNames, pickFile, analyze, toggle, runCompare, openDetail,
     deleteImage, refreshSaved, onGallerySearch, onGallerySort, onGalleryPage, tourTargets, fileRef,
   } = props;
@@ -978,9 +1075,25 @@ function Analyzer(props) {
               <p>Results are saved through the API and available for metric comparison below.</p>
             </>
           )}
-          <button type="button" className="primary" disabled={!file || loading} onClick={analyze} ref={el => { tourTargets.current.analyze = el; }}>
-            {loading ? 'Working…' : 'Analyze & save'} <span>→</span>
-          </button>
+          <div className="analysis-actions">
+            <button
+              type="button"
+              className="primary"
+              disabled={!file || loading}
+              onClick={() => analyze({ save: false })}
+              ref={el => { tourTargets.current.analyze = el; }}
+            >
+              {loading ? 'Working…' : 'Analyze'} <span>→</span>
+            </button>
+            <button
+              type="button"
+              className="secondary-button"
+              disabled={!file || loading}
+              onClick={() => analyze({ save: true })}
+            >
+              Save to gallery
+            </button>
+          </div>
         </div>
       </section>
       <section className="workspace-section">
@@ -1008,9 +1121,6 @@ function Analyzer(props) {
           >
             <option value="newest">Newest first</option>
             <option value="oldest">Oldest first</option>
-            <option value="name">Filename A–Z</option>
-            <option value="brightness">Brightness high → low</option>
-            <option value="dim">Brightness low → high</option>
           </select>
         </div>
         <p className="selection-note">
@@ -1070,22 +1180,6 @@ function Analyzer(props) {
             <Compare data={compare} />
           </Reveal>
         )}
-      </section>
-      <section className="workspace-section duplicates">
-        <div className="section-line">
-          <div>
-            <p className="eyebrow">INTEGRITY CHECK</p>
-            <h2>Exact duplicates</h2>
-          </div>
-          <span>{duplicates.length} groups</span>
-        </div>
-        {duplicates.length ? duplicates.map(group => (
-          <div className="duplicate-group" key={group.group_id}>
-            <span>SHA-256</span>
-            <code>{group.hash}</code>
-            <p>{group.images.map(i => i.filename).join(' · ')}</p>
-          </div>
-        )) : <p className="empty">No exact duplicate groups found.</p>}
       </section>
     </div>
   );
