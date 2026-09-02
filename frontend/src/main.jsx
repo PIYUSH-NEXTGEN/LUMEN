@@ -1173,9 +1173,9 @@ function Report({ report, inModal = false }) {
           {channelEntries.map(([channel, values]) => (
             <div className={`channel ${channel}`} key={channel}>
               <h4>{channel}</h4>
-              <p>Mean <strong>{format(values.mean)}</strong></p>
-              <p>Std <strong>{format(values.std)}</strong></p>
-              <p>Min / max <strong>{values.minimum} / {values.maximum}</strong></p>
+              <p>Mean <strong>{format(values?.mean)}</strong></p>
+              <p>Std <strong>{format(values?.std)}</strong></p>
+              <p>Min / max <strong>{values?.minimum} / {values?.maximum}</strong></p>
             </div>
           ))}
         </div>
@@ -1187,11 +1187,11 @@ function Report({ report, inModal = false }) {
             <div className="histogram-row" key={channel}>
               <span>{channel}</span>
               <div className="histogram-bar" aria-label={`${channel} histogram`}>
-                <i className="hist-dark" style={{ width: `${values.dark_pct}%` }} />
-                <i className="hist-mid" style={{ width: `${values.mid_pct}%` }} />
-                <i className="hist-bright" style={{ width: `${values.bright_pct}%` }} />
+                <i className="hist-dark" style={{ width: `${values?.dark_pct || 0}%` }} />
+                <i className="hist-mid" style={{ width: `${values?.mid_pct || 0}%` }} />
+                <i className="hist-bright" style={{ width: `${values?.bright_pct || 0}%` }} />
               </div>
-              <small>{format(values.dark_pct)} / {format(values.mid_pct)} / {format(values.bright_pct)}%</small>
+              <small>{format(values?.dark_pct)} / {format(values?.mid_pct)} / {format(values?.bright_pct)}%</small>
             </div>
           ))}
         </div>
@@ -1202,11 +1202,11 @@ function Report({ report, inModal = false }) {
         <DominantColorChart colors={report.dominant_colors || []} />
         <div className="color-list">
           {report.dominant_colors?.map(color => (
-            <div className="color-item" key={`${color.color}-${color.rgb.join('-')}`}>
-              <span className="color-swatch" style={{ background: `rgb(${color.rgb.join(',')})` }} />
+            <div className="color-item" key={`${color?.color}-${color?.rgb?.join('-')}`}>
+              <span className="color-swatch" style={{ background: color?.rgb ? `rgb(${color.rgb.join(',')})` : '#ccc' }} />
               <div>
-                <strong>{color.color}</strong>
-                <small>rgb({color.rgb.join(', ')}) · {format(color.percentage)}%</small>
+                <strong>{color?.color || 'Unknown'}</strong>
+                <small>rgb({color?.rgb?.join(', ') || '—'}) · {format(color?.percentage)}%</small>
               </div>
             </div>
           ))}
@@ -1218,20 +1218,24 @@ function Report({ report, inModal = false }) {
 
 function ChannelChart({ channels }) {
   const labels = [['mean', 'Mean'], ['std', 'Std'], ['minimum', 'Min'], ['maximum', 'Max']];
-  const max = Math.max(255, ...channels.flatMap(([, value]) => labels.map(([key]) => Number(value[key]) || 0)));
+  const validChannels = (channels || []).filter(([, values]) => values && typeof values === 'object');
+  const max = Math.max(255, ...validChannels.flatMap(([, value]) => labels.map(([key]) => Number(value[key]) || 0)));
+  if (validChannels.length === 0) {
+    return <p className="chart-caption">No channel data available.</p>;
+  }
   return (
     <div className="chart-scroll">
       <div className="channel-chart" role="img" aria-label="Grouped bar chart of red, green, and blue channel statistics">
         <div className="chart-axis"><span>255</span><span>128</span><span>0</span></div>
         <div className="channel-chart-groups">
-          {channels.map(([channel, values]) => (
+          {validChannels.map(([channel, values]) => (
             <div className="channel-chart-group" key={channel}>
               {labels.map(([key, label]) => (
                 <div className="channel-bar-wrap" key={key}>
                   <i
                     className={`channel-bar ${channel}`}
-                    style={{ height: `${((Number(values[key]) || 0) / max) * 100}%` }}
-                    title={`${channel} ${label}: ${format(values[key])}`}
+                    style={{ height: `${((Number(values?.[key]) || 0) / max) * 100}%` }}
+                    title={`${channel} ${label}: ${format(values?.[key])}`}
                   />
                   <span>{label}</span>
                 </div>
@@ -1246,9 +1250,13 @@ function ChannelChart({ channels }) {
 }
 
 function DominantColorChart({ colors }) {
+  const validColors = (colors || []).filter(c => c && c.rgb && c.percentage != null);
+  if (validColors.length === 0) {
+    return <p className="chart-caption">No dominant color data available.</p>;
+  }
   return (
     <div className="dominant-chart" aria-label="Dominant colour percentages">
-      {colors.map(color => (
+      {validColors.map(color => (
         <div className="dominant-bar" key={`${color.color}-bar`}>
           <span>{color.color}</span>
           <div><i style={{ width: `${Math.min(100, Number(color.percentage) || 0)}%`, background: `rgb(${color.rgb.join(',')})` }} /></div>
