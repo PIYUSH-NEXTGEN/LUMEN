@@ -2,6 +2,7 @@ import io
 import hashlib
 import numpy as np
 import config
+import os
 from PIL import Image as PILImage, UnidentifiedImageError
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -31,7 +32,10 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://lumen-image-analyzer.vercel.app"],
+allow_origins=[
+    "https://lumen-image-analyzer.vercel.app",
+    "http://localhost:5173",
+]
     allow_methods=["*"],
     allow_headers=["*"],
 )
