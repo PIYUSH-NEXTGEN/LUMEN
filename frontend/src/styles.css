@@ -65,12 +65,13 @@ h3 {
   z-index: -1;
   pointer-events: none;
   background-image: var(--bg-image);
-  background-position: center top;
+  background-position: center center;
   background-repeat: no-repeat;
   background-attachment: fixed;
-  /* Make the image scale so its full vertical extent is visible within the viewport
-     (on very narrow screens it will letterbox horizontally). */
-  background-size: auto 100vh;
+  /* Stretch the artwork to fill the viewport in both directions (user requested).
+     This will preserve a single continuous artwork but may distort the image's
+     original aspect ratio. */
+  background-size: 100vw 100vh;
 }
 
 /* Remove broad translucent wash overlay — keep the artwork clearly visible.
