@@ -189,6 +189,7 @@ function InfoTip({ text }) {
   );
 }
 
+
 // Shimmering placeholders shown while data is being fetched.
 function SkeletonCards({ count = 8 }) {
   return Array.from({ length: count }, (_, index) => (
@@ -343,6 +344,26 @@ function App() {
     setPendingScroll('limitations');
     setPage('home');
   }, [page]);
+  // Helper that centralizes fetch + JSON parsing and turns network failures
+  // into a clear, actionable Error so the UI doesn't show "Failed to fetch".
+  const safeFetchJson = useCallback(async (url, options = {}) => {
+    try {
+      const res = await fetch(url, options);
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error((body && (body.detail || body.message)) || `Server error ${res.status} ${res.statusText}`);
+      }
+      return await res.json();
+    } catch (err) {
+      // Network errors in browsers typically surface as TypeError with message
+      // "Failed to fetch" — detect that and provide a helpful hint to the user.
+      if (err instanceof TypeError || String(err.message).includes('Failed to fetch')) {
+        throw new Error(`Cannot reach the analysis API at ${API}. Is the backend running and accessible?`);
+      }
+      throw err;
+    }
+  }, []);
+
   const fetchSaved = useCallback(async (options = {}) => {
     const nextPage = options.page ?? galleryPage;
     const nextQuery = options.q ?? galleryQuery;
@@ -359,9 +380,7 @@ function App() {
         sort: nextSort,
       });
       if (nextQuery.trim()) params.set('q', nextQuery.trim());
-      const response = await fetch(`${API}/images?${params.toString()}`);
-      if (!response.ok) throw new Error('Could not load saved images. Is the API running?');
-      const data = await response.json();
+      const data = await safeFetchJson(`${API}/images?${params.toString()}`);
       // Tolerate both the paginated { items, total, ... } shape and a legacy
       // bare array (e.g. an API server that has not picked up pagination yet).
       const payload = Array.isArray(data)
@@ -374,15 +393,14 @@ function App() {
     } finally {
       setGalleryLoading(false);
     }
-  }, [galleryPage, galleryQuery, gallerySort]);
+  }, [galleryPage, galleryQuery, gallerySort, safeFetchJson]);
   const fetchDuplicates = async () => {
-    const response = await fetch(`${API}/duplicates`);
-    if (!response.ok) throw new Error('Could not load duplicate groups.');
-    setDuplicates(await response.json());
+    const data = await safeFetchJson(`${API}/duplicates`);
+    setDuplicates(Array.isArray(data) ? data : []);
   };
   useEffect(() => {
-    if (page === 'app') fetchDuplicates().catch(() => {});
-  }, [page]);
+    if (page === 'app') fetchDuplicates().catch(error => pushToast('error', error.message));
+  }, [page, safeFetchJson]);
   useEffect(() => {
     if (page !== 'app') {
       setTourStep(current => (current == null ? current : null));
@@ -418,6 +436,36 @@ function App() {
   }, [page, galleryPage, galleryQuery, gallerySort, fetchSaved, pushToast]);
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
 
+  // Client-side navigation helper and deep-link handling so visible nav items
+  // map to real (bookmarkable) URLs and don't 404 when opened directly.
+  const navigateTo = useCallback((nextPage, { replace = false, scrollTo = null } = {}) => {
+    const map = { home: '/', app: '/analyzer', limitations: '/limitations', contrib: '/contributing' };
+    setPage(nextPage);
+    if (scrollTo) setPendingScroll(scrollTo);
+    try {
+      const path = map[nextPage] || '/';
+      if (replace) window.history.replaceState({}, '', path);
+      else window.history.pushState({}, '', path);
+    } catch (e) {
+      // ignore pushState errors in constrained environments
+    }
+  }, []);
+
+  // Initialise page from URL on first load and respond to back/forward.
+  useEffect(() => {
+    const resolveFromPath = (p) => {
+      const path = (p || window.location.pathname || '/').replace(/\/$/, '');
+      if (path === '/analyzer') return 'app';
+      if (path === '/limitations') return 'limitations';
+      if (path === '/contributing') return 'contrib';
+      return 'home';
+    };
+    setPage(resolveFromPath(window.location.pathname));
+    const onPop = () => setPage(resolveFromPath(window.location.pathname));
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
   const pickFile = (event) => {
     const next = event.target.files?.[0];
     if (!next) return;
@@ -441,9 +489,7 @@ function App() {
     try {
       const form = new FormData();
       form.append('file', file);
-      const response = await fetch(`${API}/analyze?save_db=true`, { method: 'POST', body: form });
-      if (!response.ok) throw new Error((await response.json().catch(() => ({}))).detail || 'Analysis failed.');
-      const data = await response.json();
+      const data = await safeFetchJson(`${API}/analyze?save_db=true`, { method: 'POST', body: form });
       setReport(data);
       const saved = await fetchSaved({ page: 0, q: '', sort: 'newest' });
       const matching = saved.items.find(image => image.filename === data.filename);
@@ -464,9 +510,8 @@ function App() {
     if (selected.length < 2) return;
     setLoading(true);
     try {
-      const response = await fetch(`${API}/compare?ids=${selected.join(',')}`);
-      if (!response.ok) throw new Error('Unable to compare these images.');
-      setCompare(await response.json());
+      const data = await safeFetchJson(`${API}/compare?ids=${selected.join(',')}`);
+      setCompare(data);
     } catch (error) {
       pushToast('error', error.message);
     } finally {
@@ -479,9 +524,8 @@ function App() {
     setDetailError('');
     setDetailReport(null);
     try {
-      const response = await fetch(`${API}/images/${id}`);
-      if (!response.ok) throw new Error('Could not load image details.');
-      setDetailReport(normalizeReport(await response.json()));
+      const data = await safeFetchJson(`${API}/images/${id}`);
+      setDetailReport(normalizeReport(data));
     } catch (error) {
       setDetailError(error.message);
     } finally {
@@ -497,8 +541,7 @@ function App() {
   const deleteImage = async (id) => {
     if (!window.confirm("Delete this image's record?")) return;
     try {
-      const response = await fetch(`${API}/images/${id}`, { method: 'DELETE' });
-      if (!response.ok) throw new Error('Delete failed.');
+      await safeFetchJson(`${API}/images/${id}`, { method: 'DELETE' });
       setSelected(current => current.filter(x => x !== id));
       setCompare(current => current.filter(image => image.id !== id));
       if (detailId === id) closeDetail();
@@ -517,26 +560,17 @@ function App() {
       <div className="global-background" aria-hidden="true" />
       <FallingPetals />
       <header>
-        <button className="wordmark" type="button" onClick={() => setPage('home')} aria-label="LUMEN — back to home">
-          <span className="wordmark-stack" aria-hidden="true">LUMEN</span>
-        </button>
+        <div className="header-left-spacer" aria-hidden="true" />
         <nav>
-          <button type="button" className={page === 'home' ? 'active' : ''} onClick={() => setPage('home')}>Home</button>
-          <button type="button" className={page === 'app' ? 'active' : ''} onClick={() => setPage('app')}>Analyzer</button>
-          <button type="button" onClick={goToLimitations}>Limitations</button>
-          <a
-            href="https://github.com/PIYUSH-NEXTGEN/LUMEN/blob/main/CONTRIBUTING.md"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Contributing
-          </a>
-          <button type="button" className="nav-help" onClick={() => setTourStep(0)} aria-label="Replay the guided tour" title="Replay the guided tour">?</button>
+          <a href="/" className={page === 'home' ? 'active' : ''} onClick={(e) => { e.preventDefault(); navigateTo('home'); }}>Home</a>
+          <a href="/analyzer" className={page === 'app' ? 'active' : ''} onClick={(e) => { e.preventDefault(); navigateTo('app'); }}>Analyzer</a>
+          <a href="/limitations" className={page === 'limitations' ? 'active' : ''} onClick={(e) => { e.preventDefault(); navigateTo('limitations'); }}>Limitations</a>
+          <a href="/contributing" className={page === 'contrib' ? 'active' : ''} onClick={(e) => { e.preventDefault(); navigateTo('contrib'); }}>Contributing</a>
         </nav>
       </header>
       {page === 'home' ? (
-        <Home openApp={() => setPage('app')} />
-      ) : (
+        <Home openApp={() => navigateTo('app')} />
+      ) : page === 'app' ? (
         <Analyzer
           file={file}
           preview={preview}
@@ -567,6 +601,12 @@ function App() {
           tourTargets={tourTargets}
           fileRef={fileRef}
         />
+      ) : page === 'limitations' ? (
+        <LimitationsPage />
+      ) : page === 'contrib' ? (
+        <ContributingPage />
+      ) : (
+        <Home openApp={() => navigateTo('app')} />
       )}
       {page === 'app' && tourStep != null && (
         <GuidedTour
@@ -658,9 +698,9 @@ function Home({ openApp }) {
   return (
     <>
       <section className="hero reveal" ref={heroRef}>
-        <p className="eyebrow">IMAGE ANALYSIS, MADE LEGIBLE</p>
         <HeroWordmark />
-        <p>A command-line and API-based image analysis tool for quality metrics, statistics, and duplicate detection.</p>
+        <p>A command-line and API-based image analysis tool for quality metrics, channel statistics, dominant colours, and exact-hash duplicate detection.</p>
+        <p style={{ marginTop: 12, fontSize: '0.95rem', fontWeight: 500 }}>Accepted formats: PNG, JPEG, WebP. Files are sent to the configured API for processing; no third-party sharing by default. Click "Open analyzer" to upload and analyze an image.</p>
         <button type="button" className="primary" onClick={openApp}>Open analyzer <span>→</span></button>
       </section>
       <section className="content-section">
@@ -690,6 +730,49 @@ function Home({ openApp }) {
         <p className="portfolio-note">This is currently a learning and portfolio-stage project, not production-ready software.</p>
       </section>
     </>
+  );
+}
+
+// Small standalone Limitations page reachable at /limitations
+function LimitationsPage() {
+  return (
+    <main className="content-section">
+      <div className="section-head">
+        <p className="eyebrow">A CLEAR-EYED NOTE</p>
+        <h2>What LUMEN does not do.</h2>
+      </div>
+      <div className="panel limitations-page" style={{ padding: 24 }}>
+        <ul>
+          <li>Duplicate detection is exact-hash only; resized or recompressed near-duplicates are not found.</li>
+          <li>The colorfulness score is a simplified proxy and not the formal metric used in CV literature.</li>
+          <li>There is no historical versioning by default: re-analysis may overwrite a record unless persistence is configured.</li>
+          <li>Comparison is metric-based rather than a perceptual or visual similarity comparison.</li>
+        </ul>
+        <p className="portfolio-note">This is currently a learning and portfolio-stage project, not production-ready software.</p>
+        <p style={{ marginTop: 14 }}><a href="/" onClick={(e) => { e.preventDefault(); window.history.pushState({}, '', '/'); window.dispatchEvent(new PopStateEvent('popstate')); }}>Back to home</a></p>
+      </div>
+    </main>
+  );
+}
+
+// Small Contributing page at /contributing that points to the real repo and explains how to help.
+function ContributingPage() {
+  return (
+    <main className="content-section">
+      <div className="section-head">
+        <p className="eyebrow">CONTRIBUTING</p>
+        <h2>How to get involved</h2>
+      </div>
+      <div className="panel" style={{ padding: 24 }}>
+        <p>LUMEN is an open learning project providing an image analysis CLI, API, and this dashboard. Contributions welcome from developers and designers.</p>
+        <ul>
+          <li>Repository: <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN" target="_blank" rel="noopener noreferrer">github.com/PIYUSH-NEXTGEN/LUMEN</a></li>
+          <li>Report issues: <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN/issues" target="_blank" rel="noopener noreferrer">Open an issue</a></li>
+          <li>Propose improvements via PRs and discussions; follow the CONTRIBUTING.md in the repo.</li>
+        </ul>
+        <p style={{ marginTop: 14 }}><a href="/" onClick={(e) => { e.preventDefault(); window.history.pushState({}, '', '/'); window.dispatchEvent(new PopStateEvent('popstate')); }}>Back to home</a></p>
+      </div>
+    </main>
   );
 }
 

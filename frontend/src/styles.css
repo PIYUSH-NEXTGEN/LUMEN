@@ -166,13 +166,14 @@ header {
   margin: auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   padding: 0 28px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.12);
   /* Use an opaque editorial panel color derived from the artwork */
   background: var(--panel-1);
   color: var(--panel-text-dark);
   border-radius: 0 0 10px 10px;
+  position: relative;
 }
 
 .wordmark {
@@ -181,21 +182,26 @@ header {
   padding: 0;
   line-height: 1;
   color: #000000;
+  display: none; /* header wordmark removed */
 }
 
 .wordmark-stack {
-  display: inline-block;
-  font-family: 'Playfair Display', Georgia, serif;
-  font-style: italic;
-  font-weight: 800;
-  font-size: 1.9rem;
-  letter-spacing: 0.08em;
+  display: none; /* keep larger editorial wordmark hidden in header */
+}
+
+.header-left-spacer {
+  width: 44px; /* reserve space where icon used to be so centered nav doesn't collide */
+  height: 44px;
+  margin-right: 8px;
 }
 
 nav {
   display: flex;
   align-items: center;
   gap: 24px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 nav button,
@@ -233,25 +239,6 @@ nav .active::after,
   width: 100%;
 }
 
-.nav-help {
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 50%;
-  background: var(--panel-2);
-  color: var(--panel-text-dark);
-  font-weight: 800;
-  font-size: 0.9rem;
-  line-height: 1;
-  transition: all 0.2s ease;
-}
-
-.nav-help:hover {
-  background: #000000;
-  color: #ffffff;
-  border-color: #000000;
-}
 
 /* Hero Section */
 .hero {
