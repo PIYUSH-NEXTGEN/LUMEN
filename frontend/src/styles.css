@@ -511,7 +511,7 @@ nav .active::after,
 .how-page {
   max-width: 860px;
   margin: 0 auto;
-  padding: 0 28px;
+  padding: 85px 28px 0;
 }
 
 .how-page .section-head {
