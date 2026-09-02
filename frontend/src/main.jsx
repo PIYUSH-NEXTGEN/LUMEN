@@ -66,7 +66,35 @@ function setThemeFromBackgroundImage() {
 }
 
 if (typeof window !== 'undefined') {
-  document.addEventListener('DOMContentLoaded', setThemeFromBackgroundImage);
+  document.addEventListener('DOMContentLoaded', () => {
+    setThemeFromBackgroundImage();
+    positionBackgroundOverHero();
+    window.addEventListener('resize', positionBackgroundOverHero);
+    window.addEventListener('scroll', syncBackgroundOnScroll);
+  });
+}
+
+function positionBackgroundOverHero() {
+  try {
+    const bg = document.querySelector('.global-background');
+    const hero = document.querySelector('.hero');
+    if (!bg || !hero) return;
+    const heroRect = hero.getBoundingClientRect();
+    const offset = window.scrollY + heroRect.top;
+    bg.style.position = 'absolute';
+    bg.style.top = `${offset}px`;
+    bg.style.left = '0';
+    bg.style.right = '0';
+    bg.style.bottom = '0';
+    bg.style.backgroundAttachment = 'scroll';
+    bg.style.zIndex = '0';
+  } catch (e) { /* ignore */ }
+}
+
+function syncBackgroundOnScroll() {
+  // keep pseudo-elements aligned by forcing paint; no heavy work here
+  const bg = document.querySelector('.global-background');
+  if (bg) bg.style.transform = 'translateZ(0)';
 }
 
 
