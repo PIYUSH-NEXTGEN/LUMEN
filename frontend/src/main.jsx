@@ -650,6 +650,7 @@ function App() {
             <nav className="footer-col" aria-label="Footer navigation">
               <h4>Navigation</h4>
               <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN" target="_blank" rel="noopener noreferrer"><GitHubIcon />GitHub Repository</a>
+              <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN/blob/main/LICENSE" target="_blank" rel="noopener noreferrer"><LicenseIcon />MIT License</a>
             </nav>
             <nav className="footer-col" aria-label="Community and support">
               <h4>Community &amp; Support</h4>
@@ -710,6 +711,7 @@ function TrashIcon() { return <svg viewBox="0 0 24 24" aria-hidden="true"><path 
 function ArrowUpIcon() { return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5m-7 7 7-7 7 7" /></svg>; }
 function HeartIcon() { return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5C7.2 16.4 3.5 13.2 3.5 9.3c0-2.4 1.9-4.3 4.3-4.3 1.7 0 3.2 1 4.2 2.4 1-1.4 2.5-2.4 4.2-2.4 2.4 0 4.3 1.9 4.3 4.3 0 3.9-3.7 7.1-8.5 11.2z" /></svg>; }
 function StarIcon() { return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" /></svg>; }
+function LicenseIcon() { return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6zM15 2v5h5M9 13h6M9 17h6" /></svg>; }
 
 function Home({ openApp }) {
   const heroRef = useReveal();
@@ -803,6 +805,7 @@ function HowItWorksPage() {
         <div className="flow-step"><strong>PostgreSQL</strong><small>queryable history</small></div>
         <div className="flow-step"><strong>Dashboard</strong><small>this web app</small></div>
       </div>
+
 
       <div className="panel how-panel">
         <h3>Step one: getting the pixels into NumPy</h3>
@@ -1121,6 +1124,10 @@ function Analyzer(props) {
         <h1>Inspect the image.</h1>
         <p>Upload an image, save its analysis, then compare its metrics alongside other records.</p>
       </section>
+      <div className="render-warning" role="alert">
+        <span className="render-warning-icon" aria-hidden="true">⚠️</span>
+        <span>Backend runs on Render's free tier — it sleeps after inactivity and takes ~30s to wake up. Analysis and gallery loading may be slow initially. Feel free to explore other sections in the meantime.</span>
+      </div>
       <section className="upload-layout">
         <div
           className="upload-box"

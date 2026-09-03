@@ -710,6 +710,28 @@ nav .active::after,
   font-weight: 700;
 }
 
+/* Render free-tier warning banner */
+.render-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: 1180px;
+  margin: 0 auto 28px;
+  padding: 14px 18px;
+  background: #fff8e1;
+  border: 1px solid #f0d97c;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: #5c4300;
+  font-weight: 500;
+}
+.render-warning-icon {
+  flex-shrink: 0;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
 /* App Page Layout */
 .app-page {
   max-width: 1180px;
