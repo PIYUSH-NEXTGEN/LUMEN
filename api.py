@@ -1,11 +1,16 @@
 import io
 import hashlib
+import os
+import re
+import secrets
 import numpy as np
 import config
-import os
 from PIL import Image as PILImage, UnidentifiedImageError
-from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Request, Security
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security.api_key import APIKeyHeader
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from sqlalchemy import nullslast
 
 
@@ -24,10 +29,17 @@ from image_analyzer.image_quality import (
 from image_analyzer.models import ImageReport, HistogramStats
 
 
+_IS_PRODUCTION = os.getenv("ENV", "development").strip().lower() in ("production", "prod")
+
 app = FastAPI(
     title="LUMEN API",
     description="Image analysis and quality assessment API",
-    version="1.0.0"
+    version="1.0.0",
+    # Keep interactive docs for local dev; disable them entirely in production
+    # (ENV=production) so the API surface isn't publicly documented.
+    docs_url=None if _IS_PRODUCTION else "/docs",
+    redoc_url=None if _IS_PRODUCTION else "/redoc",
+    openapi_url=None if _IS_PRODUCTION else "/openapi.json",
 )
 
 app.add_middleware(
@@ -39,8 +51,54 @@ allow_origins=[
     # so a locally running dashboard can always talk to a locally running API.
     allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*"],  # includes the X-API-Key auth header used below
 )
+
+
+# --- API key authentication --------------------------------------------------
+# Shared-secret auth: every client must send its key in the X-API-Key header.
+# The key is never hardcoded — it comes from the API_KEY environment variable
+# (see .env.example and the deployment notes in README.md).
+API_KEY = os.getenv("API_KEY")
+_api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+
+async def require_api_key(x_api_key: str | None = Security(_api_key_header)) -> None:
+    """FastAPI dependency enforcing the shared-secret API key on every route."""
+    if API_KEY is None:
+        # Fail closed: if the server has no key configured, refuse everything
+        # rather than silently serving an unauthenticated API.
+        raise HTTPException(
+            status_code=503,
+            detail="API_KEY is not configured on the server. Set the API_KEY environment variable.",
+        )
+    if x_api_key is None or not secrets.compare_digest(x_api_key, API_KEY):
+        raise HTTPException(
+            status_code=401,
+            detail="Missing or invalid API key. Send it in the X-API-Key header.",
+        )
+
+
+# --- Rate limiting (slowapi) --------------------------------------------------
+# /analyze and DELETE /images/{id} are the expensive/destructive endpoints, so
+# they are rate limited per client IP (see @limiter.limit below).
+#
+# Behind Render's reverse proxy, request.client.host is Render's internal
+# proxy IP — every request would share one bucket. Render forwards the real
+# client address in X-Forwarded-For, so we use that instead. The real client
+# IP is the LAST entry (proxies append); earlier entries are client-supplied
+# and spoofable, so only the last one is trusted.
+def get_real_client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[-1].strip()
+    return request.client.host if request.client else "unknown"
+
+
+limiter = Limiter(key_func=get_real_client_ip)
+app.state.limiter = limiter  # required by slowapi's decorator machinery
+# Return a clean JSON 429 instead of a bare exception when the limit is hit.
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 def get_db():
@@ -67,7 +125,7 @@ DEFAULT_PAGE_SIZE = 24
 MAX_PAGE_SIZE = 100
 
 
-@app.get("/images")
+@app.get("/images", dependencies=[Depends(require_api_key)])
 def fetch_images(limit: int = DEFAULT_PAGE_SIZE, offset: int = 0, q: str = "", sort: str = "newest", session=Depends(get_db)):
     """Paginated, sortable, searchable list of analyzed images.
 
@@ -123,9 +181,33 @@ def fetch_images(limit: int = DEFAULT_PAGE_SIZE, offset: int = 0, q: str = "", s
 MAX_UPLOAD_BYTES = config.MAX_UPLOAD_MB * 1024 * 1024  # from config.MAX_UPLOAD_MB
 PILImage.MAX_IMAGE_PIXELS = 100_000_000  # 100 MP — blocks decompression bombs
 
+# Characters allowed in stored filenames; everything else becomes "_".
+_FILENAME_UNSAFE_RE = re.compile(r"[^a-zA-Z0-9._-]")
+MAX_FILENAME_LENGTH = 255  # matches Image.filename String(255) in the DB schema
 
-@app.post("/analyze", response_model=ImageReport)
-async def analyze_image(file: UploadFile = File(...), save_db: bool = False, session=Depends(get_db)):
+
+def sanitize_filename(raw: str | None) -> str:
+    """Return a filesystem- and DB-safe version of a client-supplied filename.
+
+    Strips any path components (blocks traversal like "../../etc/passwd"),
+    keeps only [a-zA-Z0-9._-] (replacing the rest with "_"), and caps the
+    result at 255 characters so it always fits the DB column.
+    """
+    # Normalise backslashes to "/" first so directory components are stripped
+    # on every OS (os.path.basename alone only handles the local separator).
+    name = os.path.basename((raw or "").replace("\\", "/")).strip()
+    name = _FILENAME_UNSAFE_RE.sub("_", name)
+    name = name[:MAX_FILENAME_LENGTH].strip("._") or "unnamed"
+    return name
+
+
+@app.post("/analyze", response_model=ImageReport, dependencies=[Depends(require_api_key)])
+@limiter.limit("10/minute")  # analysis is CPU-bound; 10/min per IP allows normal dashboard bursts but caps abuse
+async def analyze_image(request: Request, file: UploadFile = File(...), save_db: bool = False, session=Depends(get_db)):
+    # Never trust the browser-supplied filename: sanitize before it is used
+    # anywhere (report fields, duplicate grouping, DB storage).
+    safe_filename = sanitize_filename(file.filename)
+
     contents = bytearray()
     while chunk := await file.read(8192):
         contents.extend(chunk)
@@ -155,8 +237,8 @@ async def analyze_image(file: UploadFile = File(...), save_db: bool = False, ses
     underexposed, overexposed = exposure_stats(luminance)
 
     report = ImageReport(
-        filename=file.filename,
-        file_path=file.filename,
+        filename=safe_filename,
+        file_path=safe_filename,
         file_hash=hashlib.sha256(contents).hexdigest(),
         image_stats=img_stats,
         channel_stats=ch_stats,
@@ -199,7 +281,7 @@ async def analyze_image(file: UploadFile = File(...), save_db: bool = False, ses
     return report
 
 
-@app.get("/images/{image_id}")
+@app.get("/images/{image_id}", dependencies=[Depends(require_api_key)])
 def get_image(image_id: int, session=Depends(get_db)):
     img = session.get(DBImage, image_id)
     if img is None:
@@ -234,7 +316,7 @@ def get_image(image_id: int, session=Depends(get_db)):
     }
 
 
-@app.get("/images/{image_id}/histogram")
+@app.get("/images/{image_id}/histogram", dependencies=[Depends(require_api_key)])
 def get_histogram(image_id: int, session=Depends(get_db)):
     img = session.get(DBImage, image_id)
     if img is None:
@@ -243,8 +325,9 @@ def get_histogram(image_id: int, session=Depends(get_db)):
     return img.histogram_regions
 
 
-@app.delete("/images/{image_id}", status_code=204)
-def delete_image(image_id: int, session=Depends(get_db)):
+@app.delete("/images/{image_id}", status_code=204, dependencies=[Depends(require_api_key)])
+@limiter.limit("5/minute")  # destructive; kept stricter than /analyze
+def delete_image(request: Request, image_id: int, session=Depends(get_db)):
     img = session.get(DBImage, image_id)
     if img is None:
         raise HTTPException(status_code=404, detail="Image not found")
@@ -268,7 +351,7 @@ def delete_image(image_id: int, session=Depends(get_db)):
     session.commit()
 
 
-@app.get("/compare")
+@app.get("/compare", dependencies=[Depends(require_api_key)])
 def compare_images(ids: str, session=Depends(get_db)):
     try:
         image_ids = [int(i) for i in ids.split(",")]
@@ -300,7 +383,7 @@ def compare_images(ids: str, session=Depends(get_db)):
     ]
 
 
-@app.get("/duplicates")
+@app.get("/duplicates", dependencies=[Depends(require_api_key)])
 def list_duplicates(session=Depends(get_db)):
     groups = session.query(DBDuplicateGroup).all()
     result = []

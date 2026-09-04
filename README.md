@@ -80,13 +80,20 @@ Only needed if you want analyzed results persisted to a database instead of (or 
    ```sql
    CREATE DATABASE lumen_db;
    ```
-2. Create a `.env` file in the project root:
+2. Create a `.env` file in the project root (copy `.env.example` and fill it in):
    ```
    DB_USER=your_postgres_user
    DB_PASSWORD=your_postgres_password
    DB_HOST=localhost
    DB_PORT=5432
    DB_NAME=lumen_db
+
+   # Shared secret required by every API route (sent as the "X-API-Key" header).
+   # Generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"
+   API_KEY=
+
+   # "development" (default) keeps /docs enabled; "production" disables the docs.
+   ENV=development
    ```
 3. Create the tables:
    ```bash
@@ -176,7 +183,32 @@ npm run dev       # dev server; talks to http://localhost:8000 by default
 npm run build     # production build into dist/
 ```
 
-Point the dashboard at a different API by setting `VITE_API_BASE_URL` (see `frontend/.env.example`). Features: image upload with client-side size validation, separate Analyze / Save actions, a paginated and searchable gallery, side-by-side metric comparison with win/loss markers, full report inspection, record deletion, and a first-visit guided tour. Gallery features require the API to have PostgreSQL configured.
+Point the dashboard at a different API by setting `VITE_API_BASE_URL` (see `frontend/.env.example`). Features: image upload with client-side validation, separate Analyze / Save actions, a paginated and searchable gallery, side-by-side metric comparison with win/loss markers, full report inspection, record deletion, and a first-visit guided tour. Gallery features require the API to have PostgreSQL configured.
+
+### API authentication (X-API-Key)
+
+Every API route except the `/` health check requires a shared secret sent in the `X-API-Key` header:
+
+- The **backend** reads it from the `API_KEY` environment variable (never hardcoded). If `API_KEY` is unset on the server, all authenticated routes fail closed with `503`; a missing or wrong header returns `401`.
+- The **dashboard** reads it from `VITE_API_KEY` at build time and must attach it as the `X-API-Key` header on every request (see `frontend/.env.example`).
+- Both values must match. Generate one with:
+  ```bash
+  python -c "import secrets; print(secrets.token_urlsafe(32))"
+  ```
+
+### Deployment (Render backend + Vercel frontend)
+
+Set these environment variables in each dashboard:
+
+| Variable | Where | Notes |
+|---|---|---|
+| `API_KEY` | Render (API service) | Shared secret; must equal the frontend's `VITE_API_KEY` |
+| `ENV` | Render (API service) | Set to `production` to disable `/docs`, `/redoc`, and `/openapi.json` |
+| `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | Render (API service) | Point at your hosted PostgreSQL |
+| `VITE_API_BASE_URL` | Vercel (frontend project) | e.g. `https://your-api.onrender.com` |
+| `VITE_API_KEY` | Vercel (frontend project) | Same value as `API_KEY`; sent as `X-API-Key` |
+
+Redeploy the frontend after changing `VITE_*` variables — Vite bakes them in at build time.
 
 ---
 
