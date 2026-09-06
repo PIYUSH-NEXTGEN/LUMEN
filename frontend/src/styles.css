@@ -585,82 +585,265 @@ nav .active::after,
   font-weight: 700;
 }
 
-/* Pipeline flow diagram */
-.how-flow {
-  display: flex;
-  align-items: stretch;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin: 0 0 26px;
+/* Architecture diagram (How it works page). Plain HTML/CSS so it reflows with
+   the page: entry points and outputs are three columns on wide screens and
+   stack on phones. The diagram always fits the page width — no horizontal
+   scrolling at any breakpoint. */
+.arch {
+  margin: 0 0 28px;
 }
 
-.flow-row-label {
-  flex-basis: 100%;
-  margin: 0;
-  text-align: center;
-  font-size: 0.66rem;
+.arch-section-label {
+  margin: 0 0 10px;
+  font-size: 0.68rem;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   font-weight: 700;
   color: rgba(0, 0, 0, 0.55);
-  align-self: center;
 }
 
-.flow-step {
+.arch-entries,
+.arch-outputs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.arch-node {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 10px;
+  background: var(--panel-1);
+  padding: 14px 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.arch-node strong {
+  font-size: 0.95rem;
+  color: #000000;
+}
+
+.arch-tech {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+
+.arch-note {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.arch-connector {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  gap: 2px;
+  padding: 8px 0;
   text-align: center;
-  border: 1px solid rgba(0, 0, 0, 0.25);
-  border-radius: 10px;
-  background: #ffffff;
-  padding: 14px 18px;
-  min-width: 118px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
 }
 
-.flow-step strong {
-  font-size: 0.88rem;
-  color: #000000;
-}
-
-.flow-step small {
-  margin-top: 4px;
-  font-size: 0.64rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: rgba(0, 0, 0, 0.55);
+.arch-arrow {
+  color: var(--accent);
+  font-size: 1.1rem;
   font-weight: 700;
+  line-height: 1;
 }
 
-.flow-num {
+.arch-connector-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+/* The core is the only accent-bordered element: everything the CLI and the API
+   share lives here. */
+.arch-core {
+  border: 1.5px solid var(--accent);
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 18px 18px 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.arch-core-head h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--accent);
+  letter-spacing: 0.03em;
+}
+
+.arch-core-head .arch-tech {
+  display: block;
+  margin-top: 2px;
+}
+
+.arch-groups {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.arch-group {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  background: var(--panel-1);
+  padding: 12px 14px;
+}
+
+.arch-group-wide {
+  grid-column: 1 / -1;
+}
+
+.arch-group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.arch-step {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  flex: none;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.12);
-  border: 1px solid rgba(0, 0, 0, 0.3);
-  color: #6B3012;
+  background: var(--accent);
+  color: #ffffff;
   font-size: 0.62rem;
   font-weight: 700;
-  margin-bottom: 8px;
 }
 
-.flow-arrow {
+.arch-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
-  align-items: center;
-  font-size: 1.15rem;
-  font-weight: 700;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.arch-items li {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #111111;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
+.arch-items-stack {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.arch-node-db .arch-note {
+  margin-top: 4px;
+}
+
+/* Core groups: two columns where space allows, one column on small phones.
+   Entry points and outputs: three columns on tablets and up, stacked below. */
+@media (min-width: 640px) {
+  .arch-groups {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 719px) {
+  .arch-entries,
+  .arch-outputs {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Pipeline steps (How it works page) */
+.pipe-steps {
+  display: flex;
+  flex-direction: column;
+  max-width: 420px;
+  margin: 6px 0 22px;
+}
+
+.pipe-step {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 12px 16px;
+}
+
+.pipe-step strong {
+  font-size: 0.9rem;
   color: #000000;
+}
+
+.pipe-step span {
+  font-size: 0.8rem;
+  color: rgba(0, 0, 0, 0.6);
+  font-weight: 500;
+}
+
+.pipe-arrow {
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.45);
+  padding: 4px 0;
 }
 
 .how-back {
   text-align: center;
   margin: 8px 0 24px;
+}
+
+/* Standalone navigation links ("Back to Home" and similar) render as outlined
+   secondary buttons instead of naked text links. Inline links inside copy are
+   left untouched. */
+.nav-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border: 1px solid rgba(0, 0, 0, 0.28);
+  border-radius: 10px;
+  background: var(--panel-1);
+  color: #000000;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.nav-button:hover {
+  background: var(--panel-2);
+  border-color: rgba(0, 0, 0, 0.4);
+}
+
+.nav-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.nav-button:active {
+  transform: translateY(1px);
 }
 
 /* Solid Editorial Section Panels */
@@ -1558,6 +1741,88 @@ nav .active::after,
   max-height: none;
 }
 
+/* Delete confirmation dialog — same modal family as the report modal, smaller
+   and centered. The destructive tone reuses the existing error red (#A33D2A)
+   from the toast palette. */
+.modal-backdrop-confirm {
+  align-items: center;
+  z-index: 120; /* sits above the report modal if the detail view is open */
+}
+
+.confirm-panel {
+  width: min(420px, 100%);
+  max-height: none;
+  padding: 26px 24px 22px;
+}
+
+.confirm-title {
+  margin: 0 0 10px;
+  font-size: 1.25rem;
+  color: #000000;
+}
+
+.confirm-description {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #000000;
+  overflow-wrap: anywhere;
+}
+
+.confirm-warning {
+  margin: 0 0 18px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #8b2e0f;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.confirm-actions .secondary-button {
+  margin-top: 0;
+  padding: 10px 20px;
+}
+
+.danger-button {
+  border: 1px solid #A33D2A;
+  background: #A33D2A;
+  color: #ffffff;
+  padding: 10px 22px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+  font-family: inherit;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.danger-button:hover {
+  background: #8b2e0f;
+  border-color: #8b2e0f;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(163, 61, 42, 0.3);
+}
+
+.danger-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.danger-button:focus-visible,
+.confirm-cancel:focus-visible {
+  outline: 2px solid #000000;
+  outline-offset: 2px;
+}
+
 /* Stat card grid (Overview) */
 .stat-grid {
   display: grid;
@@ -2284,15 +2549,9 @@ td.diff-worst {
     font-size: 0.9rem;
   }
 
-  /* Pipeline flow: steps share the width, dangling arrows are removed */
-  .flow-arrow {
-    display: none;
-  }
-
-  .flow-step {
-    flex: 1 1 40%;
-    min-width: 0;
-    padding: 10px 8px;
+  /* Architecture diagram reflows instead of scrolling on phones */
+  .arch-connector-label {
+    max-width: 34ch;
   }
 
   .upload-box {
@@ -2338,6 +2597,24 @@ td.diff-worst {
   .modal-panel {
     padding: 20px 14px;
     max-height: calc(100vh - 28px);
+  }
+
+  /* Confirmation dialog keeps its centered position and comfortable padding */
+  .modal-backdrop-confirm {
+    padding: 14px 10px;
+  }
+
+  .confirm-panel {
+    padding: 22px 16px 18px;
+  }
+
+  .confirm-actions {
+    justify-content: stretch;
+  }
+
+  .confirm-actions .secondary-button,
+  .confirm-actions .danger-button {
+    flex: 1 1 auto;
   }
 
   .toast-stack {

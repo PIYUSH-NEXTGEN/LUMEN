@@ -317,6 +317,8 @@ function App() {
   const [detailReport, setDetailReport] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState('');
+  const [pendingDelete, setPendingDelete] = useState(null); // { id, filename } awaiting confirmation
+  const [deleting, setDeleting] = useState(false);
   const fileRef = useRef();
   const toastSeq = useRef(0);
   const lastGalleryFetch = useRef('');
@@ -558,8 +560,7 @@ function App() {
     setDetailError('');
     setDetailLoading(false);
   }, []);
-  const deleteImage = async (id) => {
-    if (!window.confirm("Delete this image's record?")) return;
+  const performDelete = async (id) => {
     try {
       await safeFetchJson(`${API}/images/${id}`, { method: 'DELETE' });
       setSelected(current => current.filter(x => x !== id));
@@ -570,6 +571,21 @@ function App() {
       pushToast('success', 'Record deleted.');
     } catch (error) {
       pushToast('error', error.message);
+    }
+  };
+  // Deletion is two-step: the card's delete button only opens the confirmation
+  // dialog; the API request happens after the user confirms inside the modal.
+  const requestDeleteImage = (image) => setPendingDelete({ id: image.id, filename: image.filename });
+  const cancelPendingDelete = () => setPendingDelete(null);
+  const confirmPendingDelete = async () => {
+    const target = pendingDelete;
+    if (!target || deleting) return;
+    setDeleting(true);
+    try {
+      await performDelete(target.id);
+    } finally {
+      setDeleting(false);
+      setPendingDelete(null);
     }
   };
   const selectedNames = useMemo(() => (images || []).filter(i => selected.includes(i.id)), [images, selected]);
@@ -612,7 +628,7 @@ function App() {
           toggle={toggle}
           runCompare={runCompare}
           openDetail={openDetail}
-          deleteImage={deleteImage}
+          requestDeleteImage={requestDeleteImage}
           refreshSaved={fetchSaved}
           onGallerySearch={query => { setGalleryQuery(query); setGalleryPage(0); }}
           onGallerySort={sort => { setGallerySort(sort); setGalleryPage(0); }}
@@ -644,6 +660,14 @@ function App() {
           loading={detailLoading}
           error={detailError}
           onClose={closeDetail}
+        />
+      )}
+      {pendingDelete && (
+        <DeleteConfirmationModal
+          filename={pendingDelete.filename}
+          busy={deleting}
+          onCancel={cancelPendingDelete}
+          onConfirm={confirmPendingDelete}
         />
       )}
       <footer className="site-footer">
@@ -741,15 +765,15 @@ function Home({ openApp }) {
         </div>
         <div className="feature-grid">
           {[
-            ['Image statistics', 'Counts the pixels, notes the data type, and works out the mean, spread, and range of every image. Handy as a first pass before digging into anything fancier.'],
-            ['Channel statistics', 'Runs the same numbers separately for red, green, and blue. If a photo looks off, this usually tells you which channel is dragging it down.'],
-            ['Brightness & luminance', 'Gives a plain brightness score plus a luminance-weighted one that accounts for how the eye reads colour. A dark photo scores low before you even see it.'],
-            ['Contrast & sharpness', 'Contrast comes from how far the luminance values spread out. Sharpness is measured with a Laplacian, so blurry shots stand out quickly.'],
-            ['Colorfulness & entropy', 'Colorfulness is a rough proxy for how much colour variation is going on. Entropy measures how busy the pixel distribution is, a decent stand-in for detail.'],
-            ['Exposure analysis', 'Tells you what share of pixels sit in the underexposed and overexposed zones. Useful when a picture technically loads but looks washed out or crushed.'],
-            ['Histogram regions', 'Splits each channel histogram into dark, mid, and bright bands and reports the percentage sitting in each. Skewed images show up immediately.'],
-            ['Dominant colors', 'Pulls out the top colours with their RGB values and the share of pixels they cover. Good for palettes, thumbnails, and quick sorting of a folder.'],
-            ['Duplicate detection', 'Hashes every file with SHA-256 and flags exact matches. Byte-identical copies get caught every time; resized versions will not, since the hash changes.'],
+            ['Image statistics', 'Basic image information such as size, data type, pixel values, mean, standard deviation, minimum, and maximum.'],
+            ['Channel statistics', 'Shows the statistics for red, green, and blue separately. Useful for seeing how each colour channel contributes to the image.'],
+            ['Brightness & luminance', 'Measures how light or dark the image is. Luminance also accounts for the different brightness of red, green, and blue.'],
+            ['Contrast & sharpness', 'Contrast shows the difference between dark and bright areas. Sharpness uses edge information to show how much detail the image has.'],
+            ['Colorfulness & entropy', 'Measures how much colour variation the image has and how varied its pixel values are.'],
+            ['Exposure analysis', 'Shows how many pixels are too dark or too bright. Useful for spotting underexposed and overexposed images.'],
+            ['Histogram regions', 'Breaks each colour channel into dark, mid, and bright regions and shows how the pixels are distributed between them.'],
+            ['Dominant colors', 'Finds the main colours in the image and shows their RGB values and percentage of the image.'],
+            ['Duplicate detection', 'Uses SHA-256 to find files with exactly the same contents. Changing or resizing an image creates a different hash.'],
           ].map(([title, body], index) => (
             <article
               className={`feature feature-collapsible${openFeature === index ? ' is-open' : ''}`}
@@ -767,7 +791,7 @@ function Home({ openApp }) {
             >
               <span>0{index + 1}</span>
               <h3>{title}</h3>
-              <p className="feature-hint">{openFeature === index ? 'Click to close' : 'Click to see details'}</p>
+              <p className="feature-hint">{openFeature === index ? 'Close' : 'View details'}</p>
               <div className="feature-body"><p>{body}</p></div>
             </article>
           ))}
@@ -777,128 +801,238 @@ function Home({ openApp }) {
   );
 }
 
+// Responsive architecture diagram for the How-it-works page. Built from plain
+// HTML/CSS so it reflows with the page instead of scrolling horizontally: entry
+// points and outputs sit side by side on wide screens and stack on phones.
+function ArchDiagram() {
+  const coreGroups = [
+    { title: 'IMAGE INPUT', items: ['Pillow', 'PNG / JPEG / BMP / GIF'] },
+    { title: 'IMAGE PROCESSING', items: ['RGB conversion', 'NumPy array', 'Pixel processing'] },
+    {
+      title: 'ANALYSIS',
+      wide: true,
+      items: ['Image statistics', 'Brightness / luminance', 'Contrast', 'Sharpness', 'Colorfulness', 'Entropy', 'Exposure', 'Histograms', 'Dominant colors'],
+    },
+    { title: 'DUPLICATE DETECTION', items: ['SHA-256 file hashing', 'Exact duplicate groups'] },
+    { title: 'REPORT', items: ['Pydantic models', 'Validation'] },
+  ];
+  return (
+    <div className="arch">
+      <p className="arch-section-label">Entry points</p>
+      <div className="arch-entries">
+        <div className="arch-node">
+          <strong>CLI</strong>
+          <span className="arch-tech">main.py</span>
+          <span className="arch-note">analyzes a whole folder in parallel</span>
+        </div>
+        <div className="arch-node">
+          <strong>FastAPI REST API</strong>
+          <span className="arch-tech">api.py · Backend: FastAPI</span>
+          <span className="arch-note">serves analysis, gallery, and comparison</span>
+        </div>
+        <div className="arch-node">
+          <strong>React Web Dashboard</strong>
+          <span className="arch-tech">frontend/src · Frontend: React</span>
+          <span className="arch-note">talks to the API over HTTP / JSON only — no direct database access</span>
+        </div>
+      </div>
+      <div className="arch-connector">
+        <span className="arch-arrow">↓</span>
+        <span className="arch-connector-label">CLI and API share the same analysis code</span>
+      </div>
+      <div className="arch-core">
+        <div className="arch-core-head">
+          <h3>Image Analysis Core</h3>
+          <span className="arch-tech">analyzer.py · shared by CLI and API</span>
+        </div>
+        <ol className="arch-groups">
+          {coreGroups.map((group, i) => (
+            <li key={group.title} className={group.wide ? 'arch-group arch-group-wide' : 'arch-group'}>
+              <p className="arch-group-title"><span className="arch-step">{i + 1}</span>{group.title}</p>
+              <ul className="arch-items">
+                {group.items.map((item) => <li key={item}>{item}</li>)}
+              </ul>
+            </li>
+          ))}
+        </ol>
+      </div>
+      <div className="arch-connector">
+        <span className="arch-arrow">↓</span>
+        <span className="arch-connector-label">one validated Pydantic report</span>
+      </div>
+      <p className="arch-section-label">Outputs</p>
+      <div className="arch-outputs">
+        <div className="arch-node">
+          <strong>CSV</strong>
+          <span className="arch-note">flat table, one row per image</span>
+        </div>
+        <div className="arch-node">
+          <strong>JSON</strong>
+          <span className="arch-note">complete structured analysis</span>
+        </div>
+        <div className="arch-node arch-node-db">
+          <strong>PostgreSQL</strong>
+          <span className="arch-tech">Database: PostgreSQL + SQLAlchemy</span>
+          <ul className="arch-items arch-items-stack">
+            <li>Images</li>
+            <li>Analysis results</li>
+            <li>Duplicate groups</li>
+            <li>Analysis history</li>
+          </ul>
+          <span className="arch-note">written by the API only — the dashboard never connects directly</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 // Standalone How it works page at /how-it-works explaining the analysis pipeline.
 function HowItWorksPage() {
   return (
     <main className="how-page">
       <div className="section-head">
         <p className="eyebrow">HOW IT WORKS</p>
-        <h2>From pixels to numbers, in one pass.</h2>
+        <h2>From image to analysis</h2>
       </div>
 
       <div className="panel how-panel how-intro">
         <p>
-          LUMEN looks at an image and turns it into a few simple numbers: how bright it is, how
-          sharp it is, how colourful it is, how much of it is too dark or too bright, and whether
-          it's an exact copy of another image. This page walks you through what happens to your
-          image, step by step, in plain words.
+          LUMEN reads the pixels, calculates the metrics, validates the result, and sends it
+          wherever you need it.
         </p>
+        <p>The same analysis is used by the CLI, API, and dashboard.</p>
       </div>
 
-      <div className="how-flow" aria-label="Analysis pipeline diagram">
-        <div className="flow-step"><span className="flow-num">1</span><strong>Your image</strong><small>PNG · JPEG · BMP · GIF</small></div>
-        <div className="flow-arrow">→</div>
-        <div className="flow-step"><span className="flow-num">2</span><strong>Load</strong><small>Pillow → RGB array</small></div>
-        <div className="flow-arrow">→</div>
-        <div className="flow-step"><span className="flow-num">3</span><strong>Analyze</strong><small>NumPy pipeline</small></div>
-        <div className="flow-arrow">→</div>
-        <div className="flow-step"><span className="flow-num">4</span><strong>Report</strong><small>validated by Pydantic</small></div>
-      </div>
-      <div className="how-flow" aria-label="Where results are stored">
-        <p className="flow-row-label">The finished report can go to any of these, alone or together:</p>
-        <div className="flow-step"><strong>CSV</strong><small>flat spreadsheet rows</small></div>
-        <div className="flow-step"><strong>JSON</strong><small>full structured report</small></div>
-        <div className="flow-step"><strong>PostgreSQL</strong><small>queryable history</small></div>
-        <div className="flow-step"><strong>Dashboard</strong><small>this web app</small></div>
-      </div>
+      <ArchDiagram />
 
 
       <div className="panel how-panel">
-        <h3>Step one: reading the image</h3>
-        <p>
-          First, a tool called Pillow opens your image and reads its pixels. It converts every
-          image to RGB colour, which just means each pixel is stored as three numbers (red, green
-          and blue) between 0 and 255. After this step, a JPEG, PNG, BMP or GIF all look exactly
-          the same to the rest of the code. If a photo has no colour at all (grayscale), the tool
-          notes it in the log so you know colour information was missing.
-        </p>
-        <p>
-          This step matters because it lets LUMEN use NumPy, which does the math on all the pixels
-          at once instead of one at a time. That's the difference between finishing in
-          milliseconds and taking much, much longer.
-        </p>
-        <h3>Step two: what actually gets measured</h3>
-        <p>
-          Every number answers a simple question you'd otherwise have to judge by squinting at the
-          image.
-        </p>
+        <h3>The pipeline</h3>
+        <div className="pipe-steps">
+          <div className="pipe-step"><strong>1. Upload</strong><span>PNG, JPEG, BMP, or GIF</span></div>
+          <div className="pipe-arrow">↓</div>
+          <div className="pipe-step"><strong>2. Load</strong><span>Pillow converts the image into an RGB NumPy array</span></div>
+          <div className="pipe-arrow">↓</div>
+          <div className="pipe-step"><strong>3. Analyze</strong><span>NumPy calculates the image metrics</span></div>
+          <div className="pipe-arrow">↓</div>
+          <div className="pipe-step"><strong>4. Validate</strong><span>Pydantic checks the final report</span></div>
+        </div>
+        <p>The results can then be saved or viewed through:</p>
         <ul className="how-list">
-          <li><strong>Brightness</strong> — how light or dark the whole image is. A second, weighted number is shown too, because your eyes notice green much more than red, and blue barely at all. So two photos with the same average can still look very different.</li>
-          <li><strong>Contrast</strong> — how spread out the light and dark areas are. Flat, hazy photos have low contrast; punchy ones have high contrast.</li>
-          <li><strong>Sharpness</strong> — how in-focus the photo is. The tool looks for edges: a crisp photo has strong, clear edges, while a blurry one has soft, faint ones.</li>
-          <li><strong>Colorfulness</strong> — how colourful the image is, based on how different each pixel's strongest and weakest colours are. It's a simple shortcut, but it works well when comparing photos against each other.</li>
-          <li><strong>Entropy</strong> — how much detail and variety the image has. A plain, empty sky scores low; dense leaves or a busy crowd score high.</li>
-          <li><strong>Exposure</strong> — how many pixels are too dark or too bright. This catches photos that technically open fine but are crushed to black or blown out to white.</li>
-          <li><strong>Basics</strong> — handy facts like aspect ratio, megapixels, file size, format, average saturation, and whether the colours lean warm or cool.</li>
+          <li><strong>CSV</strong> — one row per image</li>
+          <li><strong>JSON</strong> — full analysis data</li>
+          <li><strong>PostgreSQL</strong> — saved image history</li>
+          <li><strong>Dashboard</strong> — view and compare results</li>
         </ul>
-        <h3>Step three: the histogram and its thresholds</h3>
-        <p>
-          A histogram is a chart that counts how many pixels sit at each brightness level, from 0
-          (black) to 255 (white). LUMEN draws one for each colour channel, so nothing gets
-          averaged away or approximated. The cut-offs for "too dark" and "too bright" (85 and 170)
-          live in a settings file, so you can change what counts as "too dark" for your photos
-          without touching any analysis code.
-        </p>
-        <h3>Step four: duplicate detection, and its honest limits</h3>
-        <p>
-          To find duplicates, LUMEN creates a unique fingerprint (a SHA-256 hash) from the file's
-          raw bytes. If two files share a fingerprint, they are exactly the same file. No
-          mistakes, ever. The downside is just as clear: resize or re-save a photo and the
-          fingerprint changes completely, so "almost the same" copies slip through unnoticed.
-          Smarter matching that can spot near-duplicates may be added later, but exact matching
-          came first because it never gets it wrong.
-        </p>
+      </div>
 
-        <h3>Step five: why batch analysis is fast</h3>
+      <div className="panel how-panel">
+        <h3>Step one: loading the image</h3>
+        <p>LUMEN uses Pillow to open the image and read its pixels.</p>
         <p>
-          When you analyse a whole folder, LUMEN splits the work across all your CPU cores, one
-          worker per core, so a large collection finishes nearly as many times faster as you have
-          cores. Each image is handled on its own, which is what makes the split possible.
+          The image is converted to RGB, so every pixel is represented by three values: red, green,
+          and blue. Each value ranges from 0 to 255.
         </p>
+        <p>
+          This gives the rest of the pipeline a consistent format regardless of whether the original
+          file was a JPEG, PNG, BMP, or GIF.
+        </p>
+        <p>The image data is then passed to NumPy for the actual calculations.</p>
+      </div>
 
-        <h3>Step six: where the results end up</h3>
+      <div className="panel how-panel">
+        <h3>Step two: analyzing the image</h3>
+        <p>LUMEN calculates several metrics from the pixels.</p>
+        <ul className="how-list">
+          <li><strong>Brightness</strong> — the average brightness of the image. LUMEN also calculates luminance, which weights the RGB channels differently.</li>
+          <li><strong>Contrast</strong> — shows how much the pixel values vary between dark and bright areas.</li>
+          <li><strong>Sharpness</strong> — uses image edges to estimate how much fine detail is present.</li>
+          <li><strong>Colorfulness</strong> — measures the difference between the strongest and weakest colour channels across the image.</li>
+          <li><strong>Entropy</strong> — measures how much variation there is in the image data. Images with more variation generally have higher entropy.</li>
+          <li><strong>Exposure</strong> — counts pixels that fall below the dark threshold or above the bright threshold.</li>
+          <li><strong>Basic information</strong> — includes dimensions, aspect ratio, megapixels, file size, format, saturation, and other image properties.</li>
+        </ul>
+      </div>
+      <div className="panel how-panel">
+        <h3>Step three: histograms</h3>
+        <p>LUMEN creates a histogram for each RGB channel.</p>
+        <p>The histogram shows how many pixels fall at each value from 0 to 255.</p>
         <p>
-          CSV gives you a simple spreadsheet with one row per image, ready to open anywhere. JSON
-          gives you the full, detailed report, including duplicate groups. Neither needs any
-          setup: just run the command.
-        </p>
-        <p>
-          The PostgreSQL database is optional. The detailed results (per-channel stats,
-          histograms, colour lists) are stored in a flexible format instead of dozens of separate
-          columns, so new measurements can be added later without rebuilding anything. Saving is
-          also safe to repeat: analysing the same file twice just updates the existing entry
-          instead of creating a copy, so re-running a folder never makes a mess.
-        </p>
-
-        <h3>Step seven: the API and this dashboard</h3>
-        <p>
-          The API is built with FastAPI, which double-checks every report before sending it, so
-          broken data never reaches your app. Uploads are handled in small chunks and rejected
-          with a clear "file too large" message past the 50 MB limit, so a careless upload can't
-          overload the server. Corrupt or non-image files get a short, readable error too, never
-          a scary crash message.
-        </p>
-        <p>
-          The API covers the whole workflow: <code>/analyze</code> checks one image,
-          <code> /images</code> lists your saved gallery with search and sorting,
-          <code> /images/&#123;id&#125;</code> shows one full report, and <code>/compare</code>
-          puts images side by side. This dashboard is simply a friendly face for those endpoints:
-          it uploads, browses, compares and deletes, and every number you see here comes from the
-          same pipeline described above.
+          The values are also grouped into dark, mid, and bright regions. The thresholds used for
+          these regions are stored in the project settings, so they can be changed without
+          modifying the analysis functions.
         </p>
       </div>
 
-      <p className="how-back"><a href="/" onClick={(e) => { e.preventDefault(); window.history.pushState({}, '', '/'); window.dispatchEvent(new PopStateEvent('popstate')); }}>Back to home</a></p>
+      <div className="panel how-panel">
+        <h3>Step four: finding duplicates</h3>
+        <p>Duplicate detection uses SHA-256.</p>
+        <p>
+          LUMEN creates a hash from the raw bytes of each file. If two files have the same hash,
+          their contents are exactly the same.
+        </p>
+        <p>This only finds exact duplicates.</p>
+        <p>
+          For example, resizing an image, changing its format, or saving it again can change the
+          file bytes and therefore produce a different hash. LUMEN does not currently treat those
+          files as duplicates.
+        </p>
+      </div>
+
+      <div className="panel how-panel">
+        <h3>Step five: analyzing multiple images</h3>
+        <p>When a folder is analyzed, LUMEN can process multiple images in parallel.</p>
+        <p>
+          The work is split between CPU processes, with each process handling its own image. This
+          allows larger folders to be processed without analyzing every image one after another.
+        </p>
+        <p>Each image produces its own analysis result, which is collected into the final output.</p>
+      </div>
+
+      <div className="panel how-panel">
+        <h3>Step six: saving the results</h3>
+        <p>LUMEN supports several ways to use the results.</p>
+        <ul className="how-list">
+          <li><strong>CSV</strong> — a simple table with one row for each image. Useful for opening the results in a spreadsheet or processing them elsewhere.</li>
+          <li><strong>JSON</strong> — contains the complete structured analysis, including nested data such as channel statistics, histograms, and dominant colours.</li>
+          <li><strong>PostgreSQL</strong> — stores analysis results in a database so they can be searched, compared, and viewed later.</li>
+        </ul>
+        <p>
+          The database is optional. LUMEN can be used without it when only local CSV or JSON output
+          is needed.
+        </p>
+      </div>
+
+      <div className="panel how-panel">
+        <h3>Step seven: API and dashboard</h3>
+        <p>The API is built with FastAPI and uses the same analysis pipeline as the CLI.</p>
+        <p>
+          The main endpoints handle image analysis, saved images, individual reports, and
+          comparisons.
+        </p>
+        <p>
+          The API also validates the data before returning it and handles invalid files and
+          oversized uploads.
+        </p>
+        <p>
+          The dashboard sits on top of the API. It provides the interface for uploading images,
+          viewing saved results, comparing images, and managing the gallery.
+        </p>
+        <p>
+          The important part is that the dashboard does not have a separate analysis system. The
+          numbers shown in the dashboard come from the same pipeline used by the CLI.
+        </p>
+      </div>
+
+      <div className="panel how-panel">
+        <h3>The whole system</h3>
+        <p>At a high level, the flow is:</p>
+        <p><strong>Image → Pillow → NumPy → Analysis → Pydantic → Output</strong></p>
+        <p>The output can then go to CSV, JSON, PostgreSQL, or the web dashboard.</p>
+      </div>
+
+      <p className="how-back"><a className="nav-button" href="/" onClick={(e) => { e.preventDefault(); window.history.pushState({}, '', '/'); window.dispatchEvent(new PopStateEvent('popstate')); }}>← Back to Home</a></p>
     </main>
   );
 }
@@ -947,7 +1081,7 @@ function LimitationsPage() {
           </li>
         </ul>
         <p className="portfolio-note">This is currently a learning and portfolio-stage project, not production-ready software.</p>
-        <p style={{ marginTop: 14 }}><a href="/" onClick={(e) => { e.preventDefault(); window.history.pushState({}, '', '/'); window.dispatchEvent(new PopStateEvent('popstate')); }}>Back to home</a></p>
+        <p className="how-back" style={{ marginTop: 14 }}><a className="nav-button" href="/" onClick={(e) => { e.preventDefault(); window.history.pushState({}, '', '/'); window.dispatchEvent(new PopStateEvent('popstate')); }}>← Back to Home</a></p>
       </div>
     </main>
   );
@@ -1021,7 +1155,7 @@ function ContributingPage() {
           <li>The full contributing guide: <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer">CONTRIBUTING.md</a></li>
         </ul>
         <p className="portfolio-note">This is currently a learning and portfolio-stage project, not production-ready software.</p>
-        <p style={{ marginTop: 14 }}><a href="/" onClick={(e) => { e.preventDefault(); window.history.pushState({}, '', '/'); window.dispatchEvent(new PopStateEvent('popstate')); }}>Back to home</a></p>
+        <p className="how-back" style={{ marginTop: 14 }}><a className="nav-button" href="/" onClick={(e) => { e.preventDefault(); window.history.pushState({}, '', '/'); window.dispatchEvent(new PopStateEvent('popstate')); }}>← Back to Home</a></p>
       </div>
     </main>
   );
@@ -1112,7 +1246,7 @@ function Analyzer(props) {
   const {
     file, preview, report, loading, gallery, selected, compare,
     selectedNames, pickFile, analyze, toggle, runCompare, openDetail,
-    deleteImage, refreshSaved, onGallerySearch, onGallerySort, onGalleryPage, tourTargets, fileRef,
+    requestDeleteImage, refreshSaved, onGallerySearch, onGallerySort, onGalleryPage, tourTargets, fileRef,
   } = props;
 
   return (
@@ -1120,11 +1254,11 @@ function Analyzer(props) {
       <section className="app-intro">
         <p className="eyebrow">WORKSPACE</p>
         <h1>Inspect the image.</h1>
-        <p>Upload an image, save its analysis, then compare its metrics alongside other records.</p>
+        <p>Upload an image, save the results, and compare it with other images.</p>
       </section>
       <div className="render-warning" role="alert">
         <span className="render-warning-icon" aria-hidden="true">⚠️</span>
-        <span>Backend runs on Render's free tier — it sleeps after inactivity and takes ~30s to wake up. Analysis and gallery loading may be slow initially. Feel free to explore other sections in the meantime.</span>
+        <span>The backend may take around 30-50 seconds to wake up after being idle. The first upload or gallery load might be slow. Feel free to explore other sections in the meantime.</span>
       </div>
       <section className="upload-layout">
         <div
@@ -1232,7 +1366,7 @@ function Analyzer(props) {
               selected={selected.includes(image.id)}
               onOpen={openDetail}
               onToggle={toggle}
-              onDelete={deleteImage}
+              onDelete={requestDeleteImage}
             />
           ))}
           {!gallery.items.length && gallery.loading && <SkeletonCards />}
@@ -1290,7 +1424,7 @@ function GalleryCard({ image, index, selected, onOpen, onToggle, onDelete }) {
         type="button"
         className="card-delete"
         aria-label="Delete record"
-        onClick={event => { event.stopPropagation(); onDelete(image.id); }}
+        onClick={event => { event.stopPropagation(); onDelete(image); }}
       >
         <TrashIcon />
       </button>
@@ -1355,6 +1489,76 @@ function GalleryModal({ report, loading, error, onClose }) {
         {loading && <ReportSkeleton />}
         {error && <p className="modal-status modal-error">{error}</p>}
         {report && <Report report={report} inModal />}
+      </div>
+    </div>
+  );
+}
+
+// Reusable delete-confirmation dialog, shared by every place that can delete a
+// gallery record. Replaces the browser's native confirm() so the flow stays
+// inside the LUMEN UI. While open it traps Tab focus, closes on Escape or the
+// × button without deleting, and restores focus to the previously focused
+// element when it unmounts. Cancel is focused first — the safe default.
+function DeleteConfirmationModal({ filename, busy = false, onCancel, onConfirm }) {
+  const dialogRef = useRef(null);
+  const cancelRef = useRef(null);
+
+  useEffect(() => {
+    const previouslyFocused = document.activeElement;
+    cancelRef.current?.focus();
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onCancel();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const dialog = dialogRef.current;
+      if (!dialog) return;
+      const focusable = dialog.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])');
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      if (previouslyFocused && typeof previouslyFocused.focus === 'function') previouslyFocused.focus();
+    };
+  }, [onCancel]);
+
+  return (
+    <div className="modal-backdrop modal-backdrop-confirm" onClick={onCancel} role="presentation">
+      <div
+        ref={dialogRef}
+        className="modal-panel confirm-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-confirm-title"
+        aria-describedby="delete-confirm-description"
+        onClick={event => event.stopPropagation()}
+      >
+        <button type="button" className="modal-close" onClick={onCancel} aria-label="Close dialog" disabled={busy}>×</button>
+        <h2 id="delete-confirm-title" className="confirm-title">Delete image?</h2>
+        <p id="delete-confirm-description" className="confirm-description">
+          Are you sure you want to delete &quot;{filename}&quot;?
+        </p>
+        <p className="confirm-warning">This action cannot be undone.</p>
+        <div className="confirm-actions">
+          <button type="button" ref={cancelRef} className="secondary-button confirm-cancel" onClick={onCancel} disabled={busy}>
+            Cancel
+          </button>
+          <button type="button" className="danger-button" onClick={onConfirm} disabled={busy}>
+            {busy ? 'Deleting…' : 'Delete'}
+          </button>
+        </div>
       </div>
     </div>
   );
