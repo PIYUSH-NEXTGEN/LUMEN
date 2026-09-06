@@ -1,94 +1,80 @@
 # Contributing to LUMEN
 
-Thanks for your interest in improving LUMEN — an image analysis tool usable as a CLI, a REST API, and a React dashboard. This guide covers setting up a development environment, the project's coding style expectations, and how to submit changes or report problems.
 
-## Development environment
+## Setup
 
-Full setup instructions live in the [README setup guide](README.md#setup-guide). The short version:
+```bash
+python -m venv .venv
+source .venv/bin/activate      # .venv\Scripts\activate on Windows
+pip install -e .
+```
 
-1. **Python 3.9+** — create and activate a virtual environment, then install in editable mode:
+```bash
+cd frontend
+npm install
+```
 
-   ```bash
-   python -m venv .venv
-   # Windows:
-   .venv\Scripts\activate
-   # macOS/Linux:
-   source .venv/bin/activate
+Postgres is optional. Only needed for `--save-db` and the `/images`, `/compare`, `/duplicates` endpoints. Setup steps are in the [README](README.md#setup).
 
-   pip install -e .
-   ```
-
-2. **Frontend** — Node.js 18+:
-
-   ```bash
-   cd frontend
-   npm install
-   ```
-
-3. **PostgreSQL (optional)** — only needed for `--save-db`, the API's persistence features, and the `/images`, `/compare`, and `/duplicates` endpoints. Configure the connection via `.env` as described in the README. Everything else (CLI analysis, CSV/JSON export, `POST /analyze`) works without a database.
-
-## Running locally
+## Running it
 
 | What | Command |
 |---|---|
-| CLI analysis | `python main.py --folder images --output image_results.csv --json-output image_results.json` |
-| API server | `uvicorn api:app --reload` (interactive docs at `http://127.0.0.1:8000/docs`) |
-| Frontend dev server | `cd frontend && npm run dev` |
+| CLI | `python main.py --folder images --output image_results.csv --json-output image_results.json` |
+| API | `uvicorn api:app --reload` (docs at `/docs` unless `ENV=production`) |
+| Frontend | `cd frontend && npm run dev` |
 
-By default the frontend talks to `http://localhost:8000`; point it elsewhere with the `VITE_API_BASE_URL` environment variable.
+Frontend hits `localhost:8000` by default — change with `VITE_API_BASE_URL`. If you're testing anything behind auth, set matching `API_KEY` and `VITE_API_KEY` locally.
 
-## Running the tests
+## Where things go
+
+- Analysis math goes in `image_analyzer/` — small, pure, vectorized functions. Not in `api.py`, not in `main.jsx`.
+- `analyzer.py` / `main.py` / `api.py` just wire those functions together.
+- The whole dashboard is one file, `frontend/src/main.jsx`, on purpose. Don't split it into components as a side quest — open an issue first if you think it should change.
+
+## Code style
+
+**Python**
+- Type hints on public functions. Docstrings short, no filler.
+- 4-space indents, double quotes, f-strings.
+- New dependencies need an issue first — keeping this list small on purpose.
+- Run `ruff check .` before opening a PR if you have it installed.
+
+**React**
+- Function components and hooks only. `ErrorBoundary` is the one class component, because React requires it.
+- No new UI libraries.
+- Kebab-case CSS classes. Light theme only — don't bring back dark mode without discussing it first.
+- Plain-English copy, no jargon. Match the tone in `metricDescriptions`.
+- If you change how a feature works, update the tour step, How It Works, and Limitations copy in the same PR — don't let them drift.
+
+**Commits**
+`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:` — imperative, one change per commit.
+
+## Tests
 
 ```bash
-pytest                 # Python: stats, image quality, duplicates, DB round-trip
-cd frontend
-npm run build          # verifies the React app compiles cleanly
+pytest -v
+cd frontend && npm run build
 ```
 
-If you have [ruff](https://github.com/astral-sh/ruff) installed, `ruff check .` is a quick lint pass before opening a PR.
+Bug fixes need a regression test. No test, no merge.
 
-## Coding style expectations
+## Pull requests
 
-### Python (backend / core)
-
-- Keep analysis logic as **small, pure, vectorized NumPy functions** inside `image_analyzer/`; orchestration lives in `analyzer.py`, `main.py`, and `api.py`.
-- Use type hints on public functions and keep docstrings short and factual.
-- Match the existing formatting: 4-space indents, double quotes, f-strings for interpolation.
-- **Add or extend tests in `test/`** for any new metric, parser, or DB behavior — bug fixes should come with a regression test.
-- Don't add new dependencies without discussing them in an issue first.
-
-### JavaScript / React (frontend)
-
-- **Function components and hooks only** — no class components (the one exception is the top-level `ErrorBoundary`, which React requires to be a class), no new UI libraries.
-- The whole dashboard lives in `frontend/src/main.jsx`: the app shell, client-side routing via the History API (home, analyzer, how-it-works, limitations, contributing), the analyzer with its upload box and gallery, comparison, modals, toasts, and the guided tour. Keep new components there unless the file is being deliberately split.
-- Styles are plain CSS in `styles.css` / `charts.css` with kebab-case class names. The frontend is light-theme only (dark mode was removed by design), and animations should respect `prefers-reduced-motion`.
-- Keep user-facing strings plain-English and friendly; metric explanations should avoid jargon (see `metricDescriptions` in `main.jsx` for the established tone).
-- If you change analyzer UI affordances, update the matching copy so things don't drift: the guided-tour steps in `tourSteps`, the How It Works page prose, and the Limitations page.
-
-### Commits
-
-Short imperative subjects with a conventional prefix, matching existing history:
-`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`.
-
-## Submitting a pull request
-
-1. Fork the repo and create a branch: `feat/<short-name>` or `fix/<short-name>`.
-2. Keep PRs small and focused — one feature or one fix per PR.
-3. If you change the API (new params, response shapes, limits), **update the README** endpoint table and any affected frontend code in the same PR.
-4. Make sure `pytest` and `cd frontend && npm run build` pass.
-5. For UI changes, include before/after screenshots and check narrow/mobile widths (the theme is light-only).
-6. Open the PR against `main` with a short "what / why" description and link any related issues.
+- One feature or fix per PR — keep it small.
+- API changes (new params, response shape, limits) update the README and any affected frontend code in the same PR.
+- Tests and `npm run build` pass before you open it.
+- UI changes need before/after screenshots and a check at mobile width.
+- Branch names: `feat/<name>` or `fix/<name>`. Link the related issue if there is one.
 
 ## Reporting bugs
 
-Open a [GitHub issue](https://github.com/PIYUSH-NEXTGEN/LUMEN/issues) and include:
+Open an issue with: what happened vs. what you expected, exact repro steps, your OS/Python/Node version, the full error (not a summary), and a sample image if it's image-specific. "It doesn't work" gets sent back for details.
 
-- What happened vs. what you expected
-- Steps to reproduce (command, flags, or click path)
-- OS, Python version, and Node version (if frontend-related)
-- The full traceback or browser console output
-- A sample image that triggers the problem, if relevant
+## Security issues
+
+Don't open a public issue. This project already had one full security audit and fix round, so treat any new finding the same way — use GitHub's private vulnerability reporting (Security tab → Report a vulnerability) instead of posting it where anyone can see it before it's fixed.
 
 ## License
 
-By contributing, you agree that your contributions are licensed under the same terms as the project's [LICENSE](LICENSE).
+Contributions are covered by the same [LICENSE](LICENSE) as the rest of the project.
