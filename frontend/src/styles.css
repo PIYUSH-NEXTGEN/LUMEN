@@ -2100,19 +2100,37 @@ td.diff-worst {
 /* Responsive Rules */
 @media (max-width: 760px) {
   header {
-    padding: 10px 18px;
+    padding: 12px 16px;
     height: auto;
     min-height: 68px;
-    flex-wrap: wrap;
-    gap: 10px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
   }
 
-  nav {
-    gap: 14px;
+  /* Desktop centers the nav absolutely over a 44px spacer; on small screens
+     the nav must flow inside the header (and wrap) instead of overflowing it. */
+  .header-left-spacer {
+    display: none;
+  }
+
+  header nav {
+    position: static;
+    left: auto;
+    transform: none;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    gap: 8px 18px;
+  }
+
+  nav button,
+  nav a {
+    white-space: nowrap; /* never break "How it works" across lines */
   }
 
   .hero {
-    padding: 95px 22px 110px;
+    padding: 85px 22px 100px;
   }
 
   .feature-grid,
@@ -2130,6 +2148,11 @@ td.diff-worst {
     padding-right: 18px;
   }
 
+  .app-page {
+    padding-top: 48px;
+    padding-bottom: 48px;
+  }
+
   .workspace-section {
     padding-top: 60px;
   }
@@ -2140,6 +2163,28 @@ td.diff-worst {
 
   .section-head h2 {
     margin-top: 8px;
+  }
+
+  .section-line {
+    flex-wrap: wrap;
+    gap: 6px 12px;
+  }
+
+  .section-line small {
+    margin-left: 0;
+  }
+
+  .how-page {
+    padding: 60px 18px 0;
+  }
+
+  .how-panel {
+    padding: 22px 20px;
+  }
+
+  .analysis-card,
+  .comparison {
+    padding: 22px;
   }
 
   .site-footer {
@@ -2170,11 +2215,15 @@ td.diff-worst {
     padding-bottom: 10px;
   }
 
-  nav {
-    gap: 8px;
-    row-gap: 4px;
-    flex-wrap: wrap;
-    font-size: 0.82rem;
+  header nav {
+    gap: 6px 12px;
+  }
+
+  nav button,
+  nav a,
+  .text-button {
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
   }
 
   .nav-help {
@@ -2189,12 +2238,19 @@ td.diff-worst {
     grid-template-columns: 1fr;
   }
 
-  .stat-grid {
+  .stat-grid,
+  .metric-list {
     grid-template-columns: 1fr;
   }
 
+  .hero {
+    padding: 60px 16px 75px;
+  }
+
+  /* Keep the big brand look but never let the nowrap word overflow a
+     narrow phone: min() shrinks it only when the viewport demands it. */
   .hero h1 {
-    font-size: 5.5rem;
+    font-size: min(5.5rem, 18vw);
   }
 
   .app-intro h1 {
@@ -2212,5 +2268,97 @@ td.diff-worst {
   .histogram-row small {
     grid-column: 2;
     text-align: left;
+  }
+
+  /* Tighter panels so text keeps comfortable line lengths on phones */
+  .how-page {
+    padding: 44px 14px 0;
+  }
+
+  .how-panel {
+    padding: 18px 16px;
+  }
+
+  .how-panel p,
+  .how-list li {
+    font-size: 0.9rem;
+  }
+
+  /* Pipeline flow: steps share the width, dangling arrows are removed */
+  .flow-arrow {
+    display: none;
+  }
+
+  .flow-step {
+    flex: 1 1 40%;
+    min-width: 0;
+    padding: 10px 8px;
+  }
+
+  .upload-box {
+    padding: 22px 16px;
+    min-height: 260px;
+  }
+
+  .analysis-card {
+    padding: 18px 16px;
+  }
+
+  .analysis-actions .primary,
+  .analysis-actions .secondary-button {
+    flex: 1 1 100%;
+  }
+
+  .comparison {
+    padding: 16px 14px;
+  }
+
+  table {
+    font-size: 0.8rem;
+  }
+
+  th,
+  td {
+    padding: 9px 10px;
+  }
+
+  .compare-action {
+    text-align: left;
+  }
+
+  .gallery-search {
+    flex-basis: 100%;
+    max-width: none;
+  }
+
+  .modal-backdrop {
+    padding: 14px 10px;
+  }
+
+  .modal-panel {
+    padding: 20px 14px;
+    max-height: calc(100vh - 28px);
+  }
+
+  .toast-stack {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    max-width: none;
+  }
+
+  .tour-card {
+    max-width: calc(100vw - 24px);
+  }
+
+  .info-tip::after {
+    max-width: min(230px, 72vw);
+  }
+
+  .back-to-top {
+    left: 14px;
+    bottom: 14px;
+    width: 40px;
+    height: 40px;
   }
 }
