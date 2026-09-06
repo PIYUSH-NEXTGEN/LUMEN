@@ -1,219 +1,196 @@
-# LUMEN v3
+# LUMEN
+A full stack image analyzer tool
 
-LUMEN is an image analysis tool usable as a CLI, a REST API, and a web dashboard. It computes per-image and per-channel statistics, image-quality metrics (brightness, contrast, sharpness, colorfulness, entropy, exposure), dominant colors, and exact-duplicate detection — with optional persistence to PostgreSQL and export to CSV/JSON. The React dashboard lets you upload images, browse a searchable gallery, and compare images side by side.
+LUMEN analyzes images  brightness, contrast, sharpness, colorfulness, entropy, exposure, dominant colors, exact-duplicate detection  and gives you the results as a CLI report, a REST API response, or a web dashboard you can click through. It started as a CLI tool and then a FastAPI layer with a React frontend on top, so all three interfaces run off the same core analysis pipeline.
 
-### Stack
-- **Language:** Python 3.9+
-- **Core libraries:** numpy, pandas, pillow (PIL), pydantic, typer
-- **API:** FastAPI, uvicorn
-- **Persistence:** PostgreSQL, SQLAlchemy, psycopg2, python-dotenv
-- **Frontend:** React 19, Vite, plain CSS (no UI libraries)
-- **Testing:** pytest (Python) and `npm run build` (frontend)
+This is a learning-stage project. It works, it's deployed
 
-## Features
-- Load common image formats (PNG, JPG, JPEG, BMP, GIF)
-- Per-image statistics (shape, dtype, mean, std, min, max) and per-channel histograms
-- Image quality metrics: luminance brightness, contrast, sharpness (Laplacian variance), colorfulness, entropy, exposure (under/overexposed %), plus aspect ratio, megapixels, mean saturation, and warm/cool bias
-- Dominant color extraction
-- Exact-file duplicate detection (SHA-256)
-- CSV and JSON exports suitable for analysis or reporting
-- Parallelized batch processing across CPU cores for faster analysis of large folders
-- Analyzed images and duplicate groups persist to PostgreSQL, safely re-run without creating duplicate rows
-- REST API for uploading and querying analysis results (via FastAPI)
-- Web dashboard (`frontend/`) for uploading images (with separate Analyze and Save actions), browsing a searchable, paginated gallery, comparing images side by side with per-metric win/loss markers — ↑ leads / ↓ trails with colour coding — inspecting full reports, and deleting records
-- Guided first-visit tour of the analyzer, plus dedicated How It Works, Limitations, and Contributing pages
+## Stack
 
-## Project layout
+- Python 3.9+ — numpy, pandas, Pillow, pydantic, Typer
+- FastAPI + uvicorn for the API
+- PostgreSQL via SQLAlchemy + psycopg2 
+- React 19 + Vite for the dashboard, CSS
+- pytest for the Python side, `npm run build` as the frontend's compile check
+
+## What it actually does
+
+- Loads PNG/JPG/JPEG/BMP/GIF and runs per-image and per-channel stats: shape, dtype, mean, std, min, max, plus full histograms
+- Computes quality metrics: luminance brightness, contrast (via Laplacian variance for sharpness), colorfulness, entropy, exposure (% under/overexposed), aspect ratio, megapixels, mean saturation, warm/cool bias
+- Pulls dominant colors out of each image
+- Flags exact duplicates by SHA-256 — same bytes, same hash, that's the whole check (more on what this doesn't catch below)
+- Exports to CSV and JSON
+- Batches folders across CPU cores with `ProcessPoolExecutor` so a few hundred images doesn't mean a coffee break
+- Persists to Postgres if you want it, upserting by file path so re-running the same folder doesn't create duplicate rows
+- Dashboard: upload, browse a searchable paginated gallery, compare images side-by-side with win/loss markers per metric, inspect a full report, delete records, and a short guided tour on first visit
+
+## Layout
+
 ```
 README.md
-pyproject.toml            - build config and dependencies; installs `image-analyzer` console script
-main.py                    - CLI entrypoint (Typer), orchestrates parallel analysis and exports
-analyzer.py                - single-image analysis pipeline (used by the CLI's worker pool)
-api.py                     - FastAPI application exposing analysis over HTTP
-config.py                  - runtime defaults (folders, thresholds, output paths, histogram bins)
-image_analyzer/            - core package
-  loader.py                 - image loading and conversion to RGB ndarray
-  histogram.py               - histogram and dark/mid/bright region percentage calculations
-  stats.py                    - image-level and channel-level statistics
-  image_quality.py             - brightness, contrast, sharpness, colorfulness, entropy, exposure, dominant colors
-  duplicate.py                  - exact duplicate detection via SHA-256 hashing
-  report.py                      - CSV/JSON export and brightest/darkest reporting
-  models.py                       - Pydantic schemas for all analysis results
+pyproject.toml            build config, deps, installs the `image-analyzer` console script
+main.py                    CLI entrypoint (Typer) — parallel analysis, exports
+analyzer.py                the actual per-image analysis pipeline, used by CLI workers
+api.py                     FastAPI app — same pipeline, over HTTP
+config.py                  defaults: folders, thresholds, output paths, histogram bins
+image_analyzer/
+  loader.py                  image loading + RGB ndarray conversion
+  histogram.py                histograms, dark/mid/bright region percentages
+  stats.py                     image- and channel-level statistics
+  image_quality.py              brightness/contrast/sharpness/colorfulness/entropy/exposure/dominant colors
+  duplicate.py                   SHA-256 exact-duplicate detection
+  report.py                       CSV/JSON export, brightest/darkest summary
+  models.py                        pydantic schemas
   database/
-    connection.py                 - SQLAlchemy engine/session, save/upsert logic
-    models.py                      - SQLAlchemy ORM table definitions
-    create_tables.py               - one-time table creation script
-frontend/                   - React dashboard (Vite)
-  src/main.jsx                - entire dashboard: routing, analyzer, gallery, comparison, and the How It Works / Limitations / Contributing pages
-  src/styles.css               - main stylesheet (plain CSS, light theme)
-  src/charts.css                - chart and report styling
-  .env.example                  - VITE_API_BASE_URL template
-test/                       - pytest suite (stats, image quality, duplicates, DB round-trip)
-LICENSE
+    connection.py                  engine/session, save/upsert logic
+    models.py                       ORM table definitions
+    create_tables.py                 one-time schema setup
+frontend/                  React dashboard (Vite)
+  src/main.jsx                the whole dashboard — routing, analyzer, gallery, comparison, static pages
+  src/styles.css               main styles
+  src/charts.css                chart/report styles
+  .env.example                  VITE_API_BASE_URL, VITE_API_KEY templates
+test/                      pytest suite
 ```
 
-**How it fits together:** `analyzer.py` holds the core single-image analysis pipeline. The CLI (`main.py`) scans a folder, runs that pipeline across images in parallel via `ProcessPoolExecutor`, optionally persists results to PostgreSQL, and writes CSV/JSON. The API (`api.py`) exposes the same analysis over HTTP, plus endpoints for listing, comparing, and inspecting previously analyzed images stored in the database. The React dashboard (`frontend/`) is a client of that API: it uploads images, browses the saved gallery, compares metrics side by side, and manages records.
+`analyzer.py` is the core  one image in, one report out. `main.py` fans that out across a folder in parallel and writes CSV/JSON. `api.py` exposes the same pipeline over HTTP and adds the endpoints for listing, comparing, and deleting whatever's been saved. The dashboard is just a client of that API  it doesn't touch the analysis code directly.
 
 ---
 
-## Setup Guide
+## Setup
 
-### 1. Clone the repository
 ```bash
 git clone https://github.com/PIYUSH-NEXTGEN/LUMEN.git
 cd LUMEN
-```
-
-### 2. Create a virtual environment and install
-```bash
 python -m venv .venv
-source .venv/bin/activate      # macOS/Linux
-.venv\Scripts\activate         # Windows
-
+source .venv/bin/activate      # .venv\Scripts\activate on Windows
 pip install -e .
 ```
 
-### 3. (Optional) Set up PostgreSQL for `--save-db` / the API
-Only needed if you want analyzed results persisted to a database instead of (or alongside) CSV/JSON, or if you want to use the API's `/images`, `/compare`, and `/duplicates` endpoints.
+That's enough to run the CLI and get CSV/JSON output. Postgres and the API's gallery features are optional on top of that.
 
-1. Install PostgreSQL and create a database:
-   ```sql
-   CREATE DATABASE lumen_db;
-   ```
-2. Create a `.env` file in the project root (copy `.env.example` and fill it in):
-   ```
-   DB_USER=your_postgres_user
-   DB_PASSWORD=your_postgres_password
-   DB_HOST=localhost
-   DB_PORT=5432
-   DB_NAME=lumen_db
+### Postgres (optional — needed for `--save-db` and most of the API)
 
-   # Shared secret required by every API route (sent as the "X-API-Key" header).
-   # Generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"
-   API_KEY=
+```sql
+CREATE DATABASE lumen_db;
+```
 
-   # "development" (default) keeps /docs enabled; "production" disables the docs.
-   ENV=development
-   ```
-3. Create the tables:
-   ```bash
-   python -m image_analyzer.database.create_tables
-   ```
+Copy `.env.example` to `.env` and fill it in:
 
-If you skip this step entirely, the CLI still works fully for CSV/JSON export, and the API's `/analyze` endpoint still works without saving — the database is optional.
+```
+DB_USER=your_postgres_user
+DB_PASSWORD=your_postgres_password
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=lumen_db
+
+# every API route needs this except the health check — sent as the X-API-Key header
+# generate one with: python -c "import secrets; print(secrets.token_urlsafe(32))"
+API_KEY=
+
+# "development" (default) keeps /docs on; "production" turns it off
+ENV=development
+```
+
+Then:
+
+```bash
+python -m image_analyzer.database.create_tables
+```
+
+Skip all of this and the CLI still exports CSV/JSON fine, and `/analyze` still works without saving — Postgres only gates persistence and the gallery-dependent endpoints.
 
 ---
 
-## Usage — CLI
+## CLI
 
-### Basic analysis (CSV + JSON export)
 ```bash
 python main.py --folder images --output image_results.csv --json-output image_results.json
 ```
-Images in the folder are analyzed in parallel across available CPU cores.
 
-### Using the installed console script (after `pip install -e .`)
+Runs across all CPU cores automatically. If you installed with `pip install -e .`, you also get a console script:
+
 ```bash
 image-analyzer --folder images --output image_results.csv --json-output image_results.json
 ```
 
-### With database persistence
+With persistence:
+
 ```bash
 python main.py --folder images --save-db
 ```
-Re-running on the same folder **updates** existing rows (matched by file path) rather than creating duplicates. If PostgreSQL is unreachable, the CLI fails fast with a clear error before analyzing any images.
 
-### Verbose/debug logging
-```bash
-python main.py --folder images -v
-```
+Re-running the same folder updates existing rows by file path instead of duplicating them. If Postgres isn't reachable, this fails immediately with a clear error, before it burns time analyzing anything.
 
-### Custom histogram bin count
-```bash
-python main.py --folder images --bins 128
-```
-
-### All CLI options at a glance
-| Flag | Default | Description |
+| Flag | Default | What it does |
 |---|---|---|
-| `--folder` | `images` | Folder containing images to analyze |
-| `--output` | `image_results.csv` | Path to save the CSV report |
-| `--json-output` | `image_results.json` | Path to save the JSON report |
-| `--bins` | `256` | Number of histogram bins |
-| `--save-db` | off | Persist results to PostgreSQL |
-| `-v` / `--verbose` | off | Enable debug-level logging |
+| `--folder` | `images` | folder to scan |
+| `--output` | `image_results.csv` | CSV output path |
+| `--json-output` | `image_results.json` | JSON output path |
+| `--bins` | `256` | histogram bin count |
+| `--save-db` | off | persist to Postgres |
+| `-v` / `--verbose` | off | debug logging |
 
 ---
 
-## Usage — API
+## API
 
-LUMEN's analysis pipeline is also available over HTTP for use by external tools or a frontend.
-
-**Run the API server:**
 ```bash
 uvicorn api:app --reload
 ```
-Then visit `http://127.0.0.1:8000/docs` for interactive API documentation (Swagger UI), where every endpoint can be tried directly in the browser.
 
-**Endpoints:**
-| Method | Path | Description |
+`/docs` gives you Swagger UI locally (disabled in production — see auth section below).
+
+| Method | Path | What it returns |
 |---|---|---|
-| GET | `/` | Health check |
-| POST | `/analyze` | Upload an image, get back its full analysis report (optionally `?save_db=true` to persist it) |
-| GET | `/images` | Paginated list of analyzed images — supports `?limit=` (default 24, max 100), `?offset=`, `?sort=` (`newest`, `oldest`, `name`, `brightness`, `dim`), and `?q=` (filename search); returns `{ items, total, limit, offset }` |
-| GET | `/images/{id}` | Full stored report for one image |
-| GET | `/images/{id}/histogram` | Histogram region data for one image |
-| GET | `/compare?ids=1,2,3` | Compare metrics across multiple images |
-| GET | `/duplicates` | List duplicate image groups |
+| GET | `/` | health check, no auth required |
+| POST | `/analyze` | full analysis report for an uploaded image; add `?save_db=true` to persist it |
+| GET | `/images` | paginated gallery — `?limit=` (default 24, max 100), `?offset=`, `?sort=` (`newest`/`oldest`/`name`/`brightness`/`dim`), `?q=` for filename search |
+| GET | `/images/{id}` | full stored report for one image |
+| GET | `/images/{id}/histogram` | histogram region data for one image |
+| GET | `/compare?ids=1,2,3` | metrics side by side across multiple images |
+| GET | `/duplicates` | duplicate groups |
 
-Invalid uploads and malformed requests return clean `400`/`404` errors with a descriptive message rather than a generic server error.
+`/analyze` rejects anything over 50 MB with a 413 (`config.MAX_UPLOAD_MB`), and the dashboard checks size client-side before it even tries. `/images` is paginated on purpose — no endpoint here will ever hand you the whole table in one response. `?save_db=true` is opt-in: without it, `/analyze` gives you the report and keeps nothing. The dashboard splits this into two buttons, Analyze and Save to gallery, so it's an explicit choice rather than something that happens silently.
 
-`POST /analyze` rejects files larger than **50 MB** with an HTTP 413 response (see `config.MAX_UPLOAD_MB`), and the web frontend checks the size before uploading. `/images` is paginated so large galleries are never fetched in one unbounded response.
+### Auth
 
-Passing `?save_db=true` persists the result; without it the image is analyzed and returned but nothing is stored. The dashboard exposes these as two separate buttons — **Analyze** (report only) and **Save to gallery** (analyze + persist).
+Every route except `/` requires an `X-API-Key` header matching the server's `API_KEY` environment variable.
+
+- No `API_KEY` set on the server → every protected route fails closed with `503`, rather than quietly running open.
+- Wrong or missing header → `401`.
+- The dashboard reads its copy from `VITE_API_KEY` at build time and attaches it to every request.
+
+Worth being upfront about what this is and isn't: it's a single shared secret, not per-user auth. It stops opportunistic scanning and scripted abuse hitting the API directly — it does not stop someone who opens the deployed site's dev tools, since the key has to be sent from the browser to work at all. There's no concept of a logged-in user here, and no per-person data isolation; everyone using the dashboard shares one gallery. That's a real limitation, not an oversight — see Limitations.
+
+Generate a key with:
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+### Rate limiting
+
+`/analyze` is capped at 10 requests/minute per IP, `DELETE /images/{id}` at 5/minute — both tracked off the real client IP via `X-Forwarded-For`, not the reverse proxy's. Plenty of headroom for normal dashboard use, tight enough to stop a script from hammering the CPU-bound analysis path or mass-deleting records.
 
 ---
 
-## Usage — Web dashboard
+## Dashboard
 
 ```bash
 cd frontend
 npm install
-npm run dev       # dev server; talks to http://localhost:8000 by default
-npm run build     # production build into dist/
+npm run dev       # talks to localhost:8000 by default
+npm run build     # production build, dist/
 ```
 
-Point the dashboard at a different API by setting `VITE_API_BASE_URL` (see `frontend/.env.example`). Features: image upload with client-side validation, separate Analyze / Save actions, a paginated and searchable gallery, side-by-side metric comparison with win/loss markers, full report inspection, record deletion, and a first-visit guided tour. Gallery features require the API to have PostgreSQL configured.
-
-### API authentication (X-API-Key)
-
-Every API route except the `/` health check requires a shared secret sent in the `X-API-Key` header:
-
-- The **backend** reads it from the `API_KEY` environment variable (never hardcoded). If `API_KEY` is unset on the server, all authenticated routes fail closed with `503`; a missing or wrong header returns `401`.
-- The **dashboard** reads it from `VITE_API_KEY` at build time and must attach it as the `X-API-Key` header on every request (see `frontend/.env.example`).
-- Both values must match. Generate one with:
-  ```bash
-  python -c "import secrets; print(secrets.token_urlsafe(32))"
-  ```
-
-### Deployment (Render backend + Vercel frontend)
-
-Set these environment variables in each dashboard:
-
-| Variable | Where | Notes |
-|---|---|---|
-| `API_KEY` | Render (API service) | Shared secret; must equal the frontend's `VITE_API_KEY` |
-| `ENV` | Render (API service) | Set to `production` to disable `/docs`, `/redoc`, and `/openapi.json` |
-| `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | Render (API service) | Point at your hosted PostgreSQL |
-| `VITE_API_BASE_URL` | Vercel (frontend project) | e.g. `https://your-api.onrender.com` |
-| `VITE_API_KEY` | Vercel (frontend project) | Same value as `API_KEY`; sent as `X-API-Key` |
-
-Redeploy the frontend after changing `VITE_*` variables — Vite bakes them in at build time.
+Point it elsewhere with `VITE_API_BASE_URL` in `frontend/.env.example`. Client-side upload validation, separate Analyze/Save actions, searchable paginated gallery, side-by-side comparison with per-metric win/loss markers, full report view, deletion, a first-visit tour. Gallery and comparison need Postgres configured on the backend; raw analysis doesn't.
 
 ---
 
-## Configuration (defaults)
-Defined in `config.py` and used as the CLI's default values above:
+## Config defaults
+
+Set in `config.py`, all overridable via CLI flags:
+
 - `HISTOGRAM_BINS = 256`
 - `DARK_THRESHOLD = 85`
 - `BRIGHT_THRESHOLD = 170`
@@ -221,37 +198,43 @@ Defined in `config.py` and used as the CLI's default values above:
 - `CSV_OUTPUT = "image_results.csv"`
 - `JSON_OUTPUT = "image_results.json"`
 
-All can be overridden per-run via CLI flags without editing the file.
+## Output formats
 
-## Outputs
-- **CSV** — a flat table with per-image metrics, suitable for spreadsheets or data pipelines.
-- **JSON** — structured export containing full image reports and duplicate groups.
-- **PostgreSQL** *(optional)* — one row per unique file path in an `images` table (JSONB columns for channel stats, histogram regions, and dominant colors), plus a `duplicate_groups` table linking images that share an identical hash.
-- **Console** — summary lines listing the brightest and darkest images and duplicate group details.
+- **CSV** — flat table, one row per image, spreadsheet-friendly
+- **JSON** — full reports plus duplicate groups
+- **Postgres** *(optional)* — one row per unique file path in `images` (JSONB for channel stats, histogram regions, dominant colors), plus a `duplicate_groups` table
+- **Console** — brightest/darkest summary, duplicate group listing
 
 ## Performance
-Batch analysis (`main.py`) distributes per-image analysis across CPU cores using `ProcessPoolExecutor`, so larger folders complete significantly faster than sequential processing. The API's `/analyze` endpoint processes a single uploaded image per request.
+
+The CLI parallelizes across CPU cores with `ProcessPoolExecutor`, so batch folders scale with your machine. The API processes one image per request — there's no batch upload endpoint.
 
 ## Tests
+
 ```bash
 pip install pytest
 pytest -v
 ```
-The suite covers image statistics, quality metrics, duplicate detection, and a PostgreSQL round-trip test. The database test automatically skips (rather than fails) if PostgreSQL isn't configured, so the full suite still runs cleanly without a database set up.
 
-For the frontend, `cd frontend && npm run build` verifies the React app compiles cleanly.
+Covers stats, quality metrics, duplicate detection, filename sanitization, and a Postgres round-trip. The DB test skips (not fails) if Postgres isn't configured, so the suite runs clean without a database. `cd frontend && npm run build` is the frontend's equivalent check — if it compiles, the build is sound.
 
 ## Troubleshooting
-- **"Folder does not exist or is not a directory"** — confirm the `--folder` path is correct and points to a real directory.
-- **"Cannot connect to database"** — only relevant when using `--save-db`; check your `.env` values and that PostgreSQL is running. The CLI fails immediately with this message rather than attempting analysis first.
-- **Dashboard shows no gallery / saves fail** — the API needs PostgreSQL configured (see setup step 3) for persistence features; analysis without saving works regardless.
-- Corrupt or unreadable images are logged and skipped (CLI) or return a clean `400` error (API); the analyzer continues with the remaining files in the folder.
+
+- **"Folder does not exist or is not a directory"** — check the `--folder` path.
+- **"Cannot connect to database"** — only comes up with `--save-db`; check `.env` and that Postgres is actually running. Fails before analyzing anything, not partway through.
+- **Dashboard gallery is empty / saves fail** — Postgres needs to be configured on the API (see setup). Analysis without saving works regardless.
+- **401 from the API** — `X-API-Key` header missing or wrong. **503** means the server itself has no `API_KEY` set — that's a deployment problem, not a client one.
+- Corrupt/unreadable images are skipped and logged (CLI) or return a `400` (API); the rest of the batch keeps going either way.
 
 ## Limitations
-- **Duplicate detection** currently uses exact byte-level hashing (SHA-256). It detects identical files only — a resized, recompressed, or re-saved copy of the same photo will *not* be flagged, since any byte change produces a different hash. Perceptual/near-duplicate hashing (e.g. average hash) is a possible future improvement.
-- **No content understanding** — LUMEN measures pixels; it does not recognize objects, scenes, or people, and produces no captions or tags.
-- **No EXIF metadata** — camera model, lens, exposure settings, GPS, and timestamps are never read; only pixel data is analyzed.
-- **Colorfulness score** is a simplified metric based on per-pixel max−min channel range. It is *not* the standard Hasler–Süsstrunk colorfulness metric used in computer vision literature, but a lightweight proxy for relative color variation.
-- **Comparison is metric-based** — side-by-side numbers with win/loss markers, not perceptual or visual similarity.
-- Database persistence stores the current state per file path only (no historical versioning) — re-analyzing a file updates its existing row rather than preserving prior analysis runs.
+
+Being direct about what this doesn't do, rather than letting you find out the hard way:
+
+- **Duplicate detection is exact-byte only.** SHA-256 catches identical files, full stop. Resize, recompress, or re-save the same photo and it's a different hash — no duplicate flag. Perceptual hashing (average hash, pHash) would fix this and isn't implemented yet.
+- **No content understanding.** This measures pixels, not subjects. No object detection, no captions, no tags — it doesn't know or care what's in the photo.
+- **No EXIF.** Camera, lens, exposure settings, GPS, timestamps — none of it is read. Pixel data only.
+- **Colorfulness is a simplified proxy** (per-pixel max−min channel range), not the Hasler–Süsstrunk metric you'll see cited in computer vision papers. Don't compare these numbers against tools that use the real thing.
+- **Comparison is numbers, not eyes.** Side-by-side metrics with win/loss markers — not a perceptual or visual similarity check.
+- **No history.** Persistence is current-state-per-file-path only; re-analyzing overwrites the existing row rather than keeping past runs.
+- **No per-user data.** One shared API key, one shared gallery — anyone with dashboard access sees everything anyone else uploaded. There's no login system and no per-user isolation. Fine for a single-person or trusted-group setup; not fine if you're expecting anything resembling privacy between users.
 
