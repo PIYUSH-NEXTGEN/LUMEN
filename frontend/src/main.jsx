@@ -824,19 +824,19 @@ function HowItWorksPage() {
         <h3>The pipeline</h3>
         <div className="pipe-steps">
           <div className="pipe-step"><strong>1. Upload</strong><span>PNG, JPEG, BMP, or GIF</span></div>
-          <div className="pipe-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div>
+          <div className="pipe-arrow">↓</div>
           <div className="pipe-step"><strong>2. Load</strong><span>Pillow converts the image into an RGB NumPy array</span></div>
-          <div className="pipe-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div>
+          <div className="pipe-arrow">↓</div>
           <div className="pipe-step"><strong>3. Analyze</strong><span>NumPy calculates the image metrics</span></div>
-          <div className="pipe-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div>
+          <div className="pipe-arrow">↓</div>
           <div className="pipe-step"><strong>4. Validate</strong><span>Pydantic checks the final report</span></div>
         </div>
         <p>The results can then be saved or viewed through:</p>
         <ul className="how-list">
-          <li><strong>CSV</strong> — one row per image</li>
-          <li><strong>JSON</strong> — full analysis data</li>
-          <li><strong>PostgreSQL</strong> — saved image history</li>
-          <li><strong>Dashboard</strong> — view and compare results</li>
+          <li><strong>CSV:</strong> one row per image</li>
+          <li><strong>JSON:</strong> full analysis data</li>
+          <li><strong>PostgreSQL:</strong> saved image history</li>
+          <li><strong>Dashboard:</strong> view and compare results</li>
         </ul>
       </div>
 
@@ -858,13 +858,13 @@ function HowItWorksPage() {
         <h3>Step two: analyzing the image</h3>
         <p>LUMEN calculates several metrics from the pixels.</p>
         <ul className="how-list">
-          <li><strong>Brightness</strong> — the average brightness of the image. LUMEN also calculates luminance, which weights the RGB channels differently.</li>
-          <li><strong>Contrast</strong> — shows how much the pixel values vary between dark and bright areas.</li>
-          <li><strong>Sharpness</strong> — uses image edges to estimate how much fine detail is present.</li>
-          <li><strong>Colorfulness</strong> — measures the difference between the strongest and weakest colour channels across the image.</li>
-          <li><strong>Entropy</strong> — measures how much variation there is in the image data. Images with more variation generally have higher entropy.</li>
-          <li><strong>Exposure</strong> — counts pixels that fall below the dark threshold or above the bright threshold.</li>
-          <li><strong>Basic information</strong> — includes dimensions, aspect ratio, megapixels, file size, format, saturation, and other image properties.</li>
+          <li><strong>Brightness:</strong> the average brightness of the image. LUMEN also calculates luminance, which weights the RGB channels differently.</li>
+          <li><strong>Contrast:</strong> shows how much the pixel values vary between dark and bright areas.</li>
+          <li><strong>Sharpness:</strong> uses image edges to estimate how much fine detail is present.</li>
+          <li><strong>Colorfulness:</strong> measures the difference between the strongest and weakest colour channels across the image.</li>
+          <li><strong>Entropy:</strong> measures how much variation there is in the image data. Images with more variation generally have higher entropy.</li>
+          <li><strong>Exposure:</strong> counts pixels that fall below the dark threshold or above the bright threshold.</li>
+          <li><strong>Basic information:</strong> includes dimensions, aspect ratio, megapixels, file size, format, saturation, and other image properties.</li>
         </ul>
       </div>
       <div className="panel how-panel">
@@ -907,9 +907,9 @@ function HowItWorksPage() {
         <h3>Step six: saving the results</h3>
         <p>LUMEN supports several ways to use the results.</p>
         <ul className="how-list">
-          <li><strong>CSV</strong> — a simple table with one row for each image. Useful for opening the results in a spreadsheet or processing them elsewhere.</li>
-          <li><strong>JSON</strong> — contains the complete structured analysis, including nested data such as channel statistics, histograms, and dominant colours.</li>
-          <li><strong>PostgreSQL</strong> — stores analysis results in a database so they can be searched, compared, and viewed later.</li>
+          <li><strong>CSV:</strong> a simple table with one row for each image. Useful for opening the results in a spreadsheet or processing them elsewhere.</li>
+          <li><strong>JSON:</strong> contains the complete structured analysis, including nested data such as channel statistics, histograms, and dominant colours.</li>
+          <li><strong>PostgreSQL:</strong> stores analysis results in a database so they can be searched, compared, and viewed later.</li>
         </ul>
         <p>
           The database is optional. LUMEN can be used without it when only local CSV or JSON output
