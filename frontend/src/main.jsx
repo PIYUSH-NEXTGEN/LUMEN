@@ -368,6 +368,7 @@ function App() {
     'X-API-Key': import.meta.env.VITE_API_KEY,
   },
 });
+
       if (!res.ok) {
         const body = await res.json().catch(() => null);
         throw new Error((body && (body.detail || body.message)) || `Server error ${res.status} ${res.statusText}`);
@@ -801,91 +802,6 @@ function Home({ openApp }) {
   );
 }
 
-// Responsive architecture diagram for the How-it-works page. Built from plain
-// HTML/CSS so it reflows with the page instead of scrolling horizontally: entry
-// points and outputs sit side by side on wide screens and stack on phones.
-function ArchDiagram() {
-  const coreGroups = [
-    { title: 'IMAGE INPUT', items: ['Pillow', 'PNG / JPEG / BMP / GIF'] },
-    { title: 'IMAGE PROCESSING', items: ['RGB conversion', 'NumPy array', 'Pixel processing'] },
-    {
-      title: 'ANALYSIS',
-      wide: true,
-      items: ['Image statistics', 'Brightness / luminance', 'Contrast', 'Sharpness', 'Colorfulness', 'Entropy', 'Exposure', 'Histograms', 'Dominant colors'],
-    },
-    { title: 'DUPLICATE DETECTION', items: ['SHA-256 file hashing', 'Exact duplicate groups'] },
-    { title: 'REPORT', items: ['Pydantic models', 'Validation'] },
-  ];
-  return (
-    <div className="arch">
-      <p className="arch-section-label">Entry points</p>
-      <div className="arch-entries">
-        <div className="arch-node">
-          <strong>CLI</strong>
-          <span className="arch-tech">main.py</span>
-          <span className="arch-note">analyzes a whole folder in parallel</span>
-        </div>
-        <div className="arch-node">
-          <strong>FastAPI REST API</strong>
-          <span className="arch-tech">api.py · Backend: FastAPI</span>
-          <span className="arch-note">serves analysis, gallery, and comparison</span>
-        </div>
-        <div className="arch-node">
-          <strong>React Web Dashboard</strong>
-          <span className="arch-tech">frontend/src · Frontend: React</span>
-          <span className="arch-note">talks to the API over HTTP / JSON only — no direct database access</span>
-        </div>
-      </div>
-      <div className="arch-connector">
-        <span className="arch-arrow">↓</span>
-        <span className="arch-connector-label">CLI and API share the same analysis code</span>
-      </div>
-      <div className="arch-core">
-        <div className="arch-core-head">
-          <h3>Image Analysis Core</h3>
-          <span className="arch-tech">analyzer.py · shared by CLI and API</span>
-        </div>
-        <ol className="arch-groups">
-          {coreGroups.map((group, i) => (
-            <li key={group.title} className={group.wide ? 'arch-group arch-group-wide' : 'arch-group'}>
-              <p className="arch-group-title"><span className="arch-step">{i + 1}</span>{group.title}</p>
-              <ul className="arch-items">
-                {group.items.map((item) => <li key={item}>{item}</li>)}
-              </ul>
-            </li>
-          ))}
-        </ol>
-      </div>
-      <div className="arch-connector">
-        <span className="arch-arrow">↓</span>
-        <span className="arch-connector-label">one validated Pydantic report</span>
-      </div>
-      <p className="arch-section-label">Outputs</p>
-      <div className="arch-outputs">
-        <div className="arch-node">
-          <strong>CSV</strong>
-          <span className="arch-note">flat table, one row per image</span>
-        </div>
-        <div className="arch-node">
-          <strong>JSON</strong>
-          <span className="arch-note">complete structured analysis</span>
-        </div>
-        <div className="arch-node arch-node-db">
-          <strong>PostgreSQL</strong>
-          <span className="arch-tech">Database: PostgreSQL + SQLAlchemy</span>
-          <ul className="arch-items arch-items-stack">
-            <li>Images</li>
-            <li>Analysis results</li>
-            <li>Duplicate groups</li>
-            <li>Analysis history</li>
-          </ul>
-          <span className="arch-note">written by the API only — the dashboard never connects directly</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 
 // Standalone How it works page at /how-it-works explaining the analysis pipeline.
 function HowItWorksPage() {
@@ -904,18 +820,15 @@ function HowItWorksPage() {
         <p>The same analysis is used by the CLI, API, and dashboard.</p>
       </div>
 
-      <ArchDiagram />
-
-
       <div className="panel how-panel">
         <h3>The pipeline</h3>
         <div className="pipe-steps">
           <div className="pipe-step"><strong>1. Upload</strong><span>PNG, JPEG, BMP, or GIF</span></div>
-          <div className="pipe-arrow">↓</div>
+          <div className="pipe-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div>
           <div className="pipe-step"><strong>2. Load</strong><span>Pillow converts the image into an RGB NumPy array</span></div>
-          <div className="pipe-arrow">↓</div>
+          <div className="pipe-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div>
           <div className="pipe-step"><strong>3. Analyze</strong><span>NumPy calculates the image metrics</span></div>
-          <div className="pipe-arrow">↓</div>
+          <div className="pipe-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div>
           <div className="pipe-step"><strong>4. Validate</strong><span>Pydantic checks the final report</span></div>
         </div>
         <p>The results can then be saved or viewed through:</p>
@@ -1045,42 +958,32 @@ function LimitationsPage() {
         <h2>What LUMEN does not do.</h2>
       </div>
       <div className="panel limitations-page" style={{ padding: 24 }}>
-        <p>
-          LUMEN measures images; it does not understand them. Since it is easier to set expectations
-          now than to disappoint later, here is an honest list of things it might look like it does
-          but doesn't.
-        </p>
         <ul>
           <li>
-            <strong>It won't find near-duplicates.</strong> Only byte-for-byte copies are caught,
-            because matching works on SHA-256 hashes of the raw file. Resize, re-compress or
-            re-save a photo and the hash changes completely, so that copy slips through untouched.
-            Perceptual hashing is the planned fix, but it isn't in yet.
+            <strong>No near-duplicate detection.</strong> LUMEN currently catches exact file copies
+            using SHA-256. Resize, compress, or save an image again and it will be treated as a
+            different file. Perceptual hashing is planned, but not implemented yet.
           </li>
           <li>
-            <strong>It has no idea what's in the picture.</strong> No object detection, no scene
-            recognition, no AI captions. LUMEN measures pixels — brightness, sharpness, colour,
-            entropy — and stays completely blind to subjects. A photo of a cat and a photo of a
-            car with identical tonality produce nearly identical reports.
+            <strong>No image understanding.</strong> LUMEN does not detect objects, recognize
+            scenes, or generate captions. It only looks at things like brightness, sharpness,
+            color, and entropy.
           </li>
           <li>
-            <strong>It ignores EXIF metadata.</strong> Camera model, lens, exposure settings, GPS
-            coordinates, timestamps: none of that is read. Only the pixel data is analysed, so a
-            shot taken on a flagship phone and a twenty-year-old point-and-shoot are judged purely
-            by what's in the frame.
+            <strong>No EXIF data.</strong> Camera details, lens information, exposure settings,
+            GPS data, and timestamps are not analyzed. LUMEN only works with the image pixels.
           </li>
           <li>
-            <strong>Compare is numbers only.</strong> Two images go side by side on their metrics,
-            with markers showing which one leads each stat. It will never tell you the images
-            "look alike" — perceptual or visual similarity is simply not computed.
+            <strong>Compare is metric-based.</strong> You can compare two images using their
+            analysis results, but LUMEN does not calculate whether the images actually look
+            similar.
           </li>
           <li>
-            <strong>There is no history.</strong> Saving the same file again overwrites its
-            previous record instead of keeping both. If you re-analyze a photo after tweaking it,
-            the older numbers are gone, so there is no timeline of how an image changed over time.
+            <strong>No analysis history.</strong> Saving an image again updates its existing
+            record. LUMEN does not currently keep previous versions or track how an image changed
+            over time.
           </li>
         </ul>
-        <p className="portfolio-note">This is currently a learning and portfolio-stage project, not production-ready software.</p>
         <p className="how-back" style={{ marginTop: 14 }}><a className="nav-button" href="/" onClick={(e) => { e.preventDefault(); window.history.pushState({}, '', '/'); window.dispatchEvent(new PopStateEvent('popstate')); }}>← Back to Home</a></p>
       </div>
     </main>
@@ -1096,65 +999,50 @@ function ContributingPage() {
         <h2>Help make LUMEN better</h2>
       </div>
       <div className="panel how-panel">
-        <h3>What this project actually is</h3>
-        <p>
-          LUMEN started as a learning project and grew into three connected tools: a command-line
-          app that analyses whole folders of images in parallel, a FastAPI service that exposes the
-          same pipeline over HTTP, and the React dashboard you are looking at right now. The stack
-          is deliberately small — Python with NumPy and Pillow for the analysis, SQLAlchemy with
-          optional PostgreSQL for storage, Vite and React for this frontend. No ML frameworks, no
-          message queues, no caching layers. The whole point is to do one job cleanly and stay
-          readable while doing it.
-        </p>
-        <p>
-          The codebase is small on purpose. <code>analyzer.py</code> holds the entire single-image
-          pipeline, <code>image_analyzer/</code> holds the reusable pieces (loading, statistics,
-          histograms, quality metrics, hashing, reporting, database), <code>api.py</code> is the
-          web layer, and <code>frontend/src/main.jsx</code> is the whole dashboard in one file. You
-          can realistically read all of it in an afternoon, which is exactly what makes it a good
-          project to contribute to.
-        </p>
-      </div>
-      <div className="panel how-panel">
-        <h3>Ways to help</h3>
+        <h3>Links</h3>
         <ul className="how-list">
-          <li><strong>Code</strong> — new quality metrics (perceptual hashing, the real Hasler–Süsstrunk colorfulness, a blur map), better duplicate detection, or CLI and API features. Check the open issues first so nobody works on the same thing twice.</li>
-          <li><strong>Tests</strong> — the pytest suite covers statistics, quality metrics, duplicate detection and a database round trip, and it skips cleanly without PostgreSQL. More coverage is always welcome, especially around edge cases like corrupt or grayscale images.</li>
-          <li><strong>Documentation</strong> — clearer README sections, better docstrings, plainer language on this site. Good docs are worth as much as good code, and easier to start with.</li>
-          <li><strong>Design and UX</strong> — the dashboard always has rough edges: layout, charts, colour choices, accessibility. Small interface fixes are genuinely appreciated.</li>
-          <li><strong>Bug reports</strong> — open an issue with what you did, what you expected, and what happened. A failing example image attached to the report makes it ten times easier to fix.</li>
+          <li><strong>Repository:</strong> <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN" target="_blank" rel="noopener noreferrer">github.com/PIYUSH-NEXTGEN/LUMEN</a></li>
+          <li><strong>Issues:</strong> <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN/issues" target="_blank" rel="noopener noreferrer">github.com/PIYUSH-NEXTGEN/LUMEN/issues</a></li>
+          <li><strong>Contributing guide:</strong> <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer">CONTRIBUTING.md</a></li>
         </ul>
       </div>
       <div className="panel how-panel">
-        <h3>Getting set up</h3>
-        <p>
-          The full walkthrough lives in the README, but the short version:
-        </p>
+        <h3>Ways to contribute</h3>
         <ul className="how-list">
-          <li><strong>Backend</strong> — clone the repo, create a virtualenv, then <code>pip install -e .</code> Try the CLI with <code>python main.py --folder images</code>; no database needed for that.</li>
-          <li><strong>API</strong> — run <code>uvicorn api:app --reload</code> and open <code>http://127.0.0.1:8000/docs</code> to poke at every endpoint. PostgreSQL is optional; without it, saving to the gallery just stays off.</li>
-          <li><strong>Frontend</strong> — <code>cd frontend &amp;&amp; npm install &amp;&amp; npm run dev</code>. It talks to <code>localhost:8000</code> by default; set <code>VITE_API_BASE_URL</code> to point it elsewhere.</li>
-          <li><strong>Tests</strong> — <code>pytest -v</code> from the project root. Everything should pass with or without a database configured.</li>
+          <li><strong>Code:</strong> Add metrics, improve duplicate detection, or add CLI and API features. Check open issues first.</li>
+          <li><strong>Tests:</strong> Add coverage for edge cases such as corrupt and grayscale images.</li>
+          <li><strong>Docs:</strong> Improve the README, docstrings, or anything that makes LUMEN easier to understand.</li>
+          <li><strong>Design:</strong> Fix layout, charts, accessibility, or other UI issues.</li>
+          <li><strong>Bugs:</strong> Open an issue with what you did, what you expected, and what happened. An example image helps.</li>
         </ul>
-        <p style={{ marginTop: 18 }}>Full details, including the <code>.env</code> keys and table creation, are in the README's setup guide.</p>
-
-        <h3>Before you open a pull request</h3>
+      </div>
+      <div className="panel how-panel">
+        <h3>Getting started</h3>
         <ul className="how-list">
-          <li>One idea per PR. Small, focused changes get reviewed and merged much faster than sweeping ones.</li>
-          <li>Explain the why in the description, not just the what. If it fixes an issue, link it.</li>
-          <li>Add or update tests when behaviour changes, and run <code>pytest</code> before pushing.</li>
-          <li>Match the existing style. The frontend is plain CSS and a single <code>main.jsx</code> — bring it up in an issue first before introducing a new library or a build step.</li>
+          <li><strong>Backend:</strong> Clone the repo, create a virtualenv, then run <code>pip install -e .</code></li>
+          <li><strong>CLI:</strong> <code>python main.py --folder images</code></li>
+          <li><strong>API:</strong> <code>uvicorn api:app --reload</code>, then open <code>http://127.0.0.1:8000/docs</code></li>
+          <li><strong>Frontend:</strong> <code>cd frontend &amp;&amp; npm install &amp;&amp; npm run dev</code></li>
+          <li><strong>Tests:</strong> Run <code>pytest -v</code> from the project root.</li>
+        </ul>
+        <p>
+          PostgreSQL is optional. The README has the full setup, including <code>.env</code>{' '}
+          variables and database setup.
+        </p>
+      </div>
+      <div className="panel how-panel">
+        <h3>Before opening a PR</h3>
+        <ul className="how-list">
+          <li>Keep each PR focused on one change.</li>
+          <li>Explain why the change is needed.</li>
+          <li>Add or update tests when behavior changes.</li>
+          <li>Run <code>pytest</code> before pushing.</li>
+          <li>Follow the existing code and UI style.</li>
+          <li>If you want to add a new dependency or build step, open an issue first.</li>
         </ul>
       </div>
 
       <div className="panel how-panel">
-        <h3>Useful links</h3>
-        <ul className="how-list">
-          <li>Repository: <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN" target="_blank" rel="noopener noreferrer">github.com/PIYUSH-NEXTGEN/LUMEN</a></li>
-          <li>Bugs and ideas: <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN/issues" target="_blank" rel="noopener noreferrer">open an issue</a></li>
-          <li>The full contributing guide: <a href="https://github.com/PIYUSH-NEXTGEN/LUMEN/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer">CONTRIBUTING.md</a></li>
-        </ul>
-        <p className="portfolio-note">This is currently a learning and portfolio-stage project, not production-ready software.</p>
         <p className="how-back" style={{ marginTop: 14 }}><a className="nav-button" href="/" onClick={(e) => { e.preventDefault(); window.history.pushState({}, '', '/'); window.dispatchEvent(new PopStateEvent('popstate')); }}>← Back to Home</a></p>
       </div>
     </main>

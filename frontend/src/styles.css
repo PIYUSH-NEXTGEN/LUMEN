@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap');
 
 
 
@@ -51,7 +51,7 @@ h3 {
 /* Ensure site content renders above the background */
 .site { z-index: 1; position: relative; }
 
-/* Remove broad translucent wash overlay — keep the artwork clearly visible.
+/* Remove broad translucent wash overlay â€” keep the artwork clearly visible.
    If a subtle wash is ever needed, set --background-wash in :root and apply it
    explicitly instead of a persistent white overlay. */
 .global-background::after { content: none; }
@@ -68,7 +68,7 @@ h3 {
    Rendered after .global-background (both fixed at z-index:-1), so it paints
    above the artwork wash but below every interactive element. Motion is
    transform-only (translateY fall on .petal, rotate spin on .leaf), which the
-   compositor handles cheaply — no JS animation loop, no layout thrash. */
+   compositor handles cheaply â€” no JS animation loop, no layout thrash. */
 .petal-scene {
   position: fixed;
   inset: 0;
@@ -578,197 +578,11 @@ nav .active::after,
 }
 
 .how-list li::before {
-  content: '—';
+  content: 'â€”';
   position: absolute;
   left: 0;
   color: rgba(0, 0, 0, 0.45);
   font-weight: 700;
-}
-
-/* Architecture diagram (How it works page). Plain HTML/CSS so it reflows with
-   the page: entry points and outputs are three columns on wide screens and
-   stack on phones. The diagram always fits the page width — no horizontal
-   scrolling at any breakpoint. */
-.arch {
-  margin: 0 0 28px;
-}
-
-.arch-section-label {
-  margin: 0 0 10px;
-  font-size: 0.68rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  font-weight: 700;
-  color: rgba(0, 0, 0, 0.55);
-}
-
-.arch-entries,
-.arch-outputs {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
-
-.arch-node {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  border-radius: 10px;
-  background: var(--panel-1);
-  padding: 14px 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.arch-node strong {
-  font-size: 0.95rem;
-  color: #000000;
-}
-
-.arch-tech {
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--accent);
-}
-
-.arch-note {
-  font-size: 0.78rem;
-  line-height: 1.45;
-  color: rgba(0, 0, 0, 0.6);
-}
-
-.arch-connector {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 8px 0;
-  text-align: center;
-}
-
-.arch-arrow {
-  color: var(--accent);
-  font-size: 1.1rem;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.arch-connector-label {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: rgba(0, 0, 0, 0.55);
-}
-
-/* The core is the only accent-bordered element: everything the CLI and the API
-   share lives here. */
-.arch-core {
-  border: 1.5px solid var(--accent);
-  border-radius: 12px;
-  background: #ffffff;
-  padding: 18px 18px 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-}
-
-.arch-core-head h3 {
-  margin: 0;
-  font-size: 1.05rem;
-  color: var(--accent);
-  letter-spacing: 0.03em;
-}
-
-.arch-core-head .arch-tech {
-  display: block;
-  margin-top: 2px;
-}
-
-.arch-groups {
-  list-style: none;
-  margin: 14px 0 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-}
-
-.arch-group {
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 8px;
-  background: var(--panel-1);
-  padding: 12px 14px;
-}
-
-.arch-group-wide {
-  grid-column: 1 / -1;
-}
-
-.arch-group-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 8px;
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  color: rgba(0, 0, 0, 0.65);
-}
-
-.arch-step {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: #ffffff;
-  font-size: 0.62rem;
-  font-weight: 700;
-}
-
-.arch-items {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.arch-items li {
-  font-size: 0.78rem;
-  font-weight: 500;
-  color: #111111;
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 999px;
-  padding: 3px 10px;
-}
-
-.arch-items-stack {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-}
-
-.arch-node-db .arch-note {
-  margin-top: 4px;
-}
-
-/* Core groups: two columns where space allows, one column on small phones.
-   Entry points and outputs: three columns on tablets and up, stacked below. */
-@media (min-width: 640px) {
-  .arch-groups {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 719px) {
-  .arch-entries,
-  .arch-outputs {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* Pipeline steps (How it works page) */
@@ -801,11 +615,20 @@ nav .active::after,
 }
 
 .pipe-arrow {
-  text-align: center;
-  font-size: 1rem;
-  font-weight: 700;
-  color: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 4px 0;
+  color: var(--accent);
+  opacity: 0.7;
+}
+.pipe-arrow svg {
+  width: 22px;
+  height: 22px;
+  transition: transform 0.2s ease;
+}
+.pipe-steps:hover .pipe-arrow svg {
+  transform: translateY(2px);
 }
 
 .how-back {
@@ -881,7 +704,7 @@ nav .active::after,
 }
 
 .limitations li::before {
-  content: '—';
+  content: 'â€”';
   color: #000000;
   font-weight: 800;
   font-family: 'DM Sans', Arial, sans-serif;
@@ -891,6 +714,26 @@ nav .active::after,
   margin-top: 30px;
   color: #000000;
   font-weight: 700;
+}
+
+/* Limitations page: comfortable spacing between the list lines */
+.limitations-page ul {
+  margin: 20px 0 10px;
+  padding-left: 22px;
+  display: grid;
+  gap: 16px;
+}
+
+.limitations-page li {
+  line-height: 1.7;
+}
+
+.limitations-page p {
+  margin: 0 0 10px;
+}
+
+.limitations-page .portfolio-note {
+  margin-top: 26px;
 }
 
 /* Render free-tier warning banner */
@@ -1004,7 +847,7 @@ nav .active::after,
 
 /* Uploaded image preview: fully visible and compact at every screen size.
    It is an in-flow, contained image (object-fit: contain + max-height), so
-   the entire image is always shown — never cropped by a cover crop, and
+   the entire image is always shown â€” never cropped by a cover crop, and
    never blown up to full size on mobile. */
 .upload-box .upload-preview {
   display: block;
@@ -1741,7 +1584,7 @@ nav .active::after,
   max-height: none;
 }
 
-/* Delete confirmation dialog — same modal family as the report modal, smaller
+/* Delete confirmation dialog â€” same modal family as the report modal, smaller
    and centered. The destructive tone reuses the existing error red (#A33D2A)
    from the toast palette. */
 .modal-backdrop-confirm {
@@ -2547,11 +2390,6 @@ td.diff-worst {
   .how-panel p,
   .how-list li {
     font-size: 0.9rem;
-  }
-
-  /* Architecture diagram reflows instead of scrolling on phones */
-  .arch-connector-label {
-    max-width: 34ch;
   }
 
   .upload-box {
