@@ -19,6 +19,10 @@ DATABASE_URL = URL.create(
     host=os.getenv("DB_HOST"),
     port=int(os.getenv("DB_PORT", 5432)),
     database=os.getenv("DB_NAME"),
+    query={
+        "sslmode": "require",
+        "channel_binding": "require",
+    },
 )
 
 engine = create_engine(DATABASE_URL)
