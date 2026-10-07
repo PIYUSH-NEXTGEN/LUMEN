@@ -12,7 +12,7 @@ It started as a CLI tool and later gained a FastAPI backend and React dashboard,
 
 * **Python:** NumPy, Pandas, Pillow, Pydantic, Typer
 * **API:** FastAPI, Uvicorn
-* **Database:** PostgreSQL, SQLAlchemy, psycopg2
+* **Database:** PostgreSQL (Neon in production), SQLAlchemy, psycopg2
 * **Frontend:** React 19, Vite, CSS
 * **Testing:** pytest
 
@@ -94,7 +94,9 @@ PostgreSQL is optional and only required for database persistence and gallery fe
 
 ### PostgreSQL
 
-Create the database:
+PostgreSQL is used for database persistence and gallery features. Neon is the production PostgreSQL provider.
+
+For local development, create the database:
 
 ```sql
 CREATE DATABASE lumen_db;
@@ -118,6 +120,18 @@ Create the tables:
 ```bash
 python -m image_analyzer.database.create_tables
 ```
+
+Production uses Neon as the managed PostgreSQL provider. The Render backend connects to the Neon database using the same environment variables:
+
+```text
+DB_HOST
+DB_PORT
+DB_NAME
+DB_USER
+DB_PASSWORD
+```
+
+Set these variables through the deployment environment (Render for production). The application builds its SQLAlchemy `postgresql+psycopg2` connection from these variables in `image_analyzer/database/connection.py`, with SSL enabled as required by Neon (`sslmode=require` and `channel_binding=require`).
 
 Generate an API key with:
 
