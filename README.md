@@ -302,14 +302,6 @@ cd frontend
 npm run build
 ```
 
-## Limitations
 
-* **Exact duplicates only.** SHA-256 detects identical files. Resizing or recompressing an image creates a different hash.
-* **No image understanding.** LUMEN measures pixels and does not detect objects, recognize scenes, or generate captions.
-* **No EXIF analysis.** Camera, lens, GPS, exposure, and timestamp data are not read.
-* **Simplified colorfulness metric.** LUMEN uses a channel range based calculation rather than the Hasler-Süsstrunk metric.
-* **Metric comparison only.** Comparing images does not measure visual or perceptual similarity.
-* **No analysis history.** Re-analyzing a file updates its current record instead of keeping previous results.
-* **Shared gallery.** The current authentication system has one shared API key and no per-user data isolation.
 
 
